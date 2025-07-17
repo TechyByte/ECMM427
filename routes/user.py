@@ -1,0 +1,68 @@
+from flask import Blueprint, render_template, redirect, url_for, request, flash
+from flask_login import current_user, login_required
+from werkzeug.security import generate_password_hash
+
+from models import db, User, Proposal, Project, CatalogProposal
+from models.Proposal import ProposalStatus
+user_bp = Blueprint('user', __name__)
+
+@user_bp.route("/", methods=["GET", "POST"])
+@login_required
+def home():
+    user = current_user.obj
+
+    if user.is_admin:
+        # Module leader view
+        students = User.query.filter_by(is_supervisor=False, is_admin=False).all()
+        return render_template("home_admin.html", students=students)
+
+    elif user.is_supervisor:
+        # Supervisor view
+        proposals = Proposal.query.filter_by(supervisor_id=user.id).all()
+        projects = Project.query.filter_by(supervisor_id=user.id).all()
+        return render_template("home_supervisor.html", proposals=proposals, projects=projects)
+
+    else:
+        # Student view
+        projects = Project.query.filter_by(student_id=user.id).all()
+        pending_proposals = [p for p in Proposal.query.filter_by(student_id=user.id).all() if p.status == ProposalStatus.PENDING]
+        catalog = CatalogProposal.query.all()
+        supervisors = User.query.filter_by(is_supervisor=True, active=True).all()
+        has_project = len(projects) > 0
+        return render_template("home_student.html", has_project=has_project,
+                               projects=projects, pending_proposals=pending_proposals, catalog=catalog,
+                               supervisors=supervisors)
+
+
+
+
+@user_bp.route("/create_user", methods=["POST"])
+@login_required
+def create_user():
+    if not (current_user.is_authenticated and current_user.obj.is_admin):
+        flash("Only module leaders can create users.")
+        return redirect(url_for("user.home"))
+
+    name = request.form.get("name")
+    email = request.form.get("email")
+    password = request.form.get("password")
+    role = request.form.get("role")
+
+    try:
+        user = User(
+            name=name,
+            email=email,
+            password_hash=generate_password_hash(password),
+            is_supervisor=(role == "supervisor"),
+            is_admin=False,
+            active=True
+        )
+        db.session.add(user)
+        db.session.commit()
+        flash(f"{role.title()} created successfully.")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error: {e}")
+
+    return redirect(url_for("user.home"))
+

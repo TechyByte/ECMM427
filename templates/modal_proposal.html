@@ -1,0 +1,70 @@
+<div class="modal fade" id="proposalModal" tabindex="-1" aria-labelledby="proposalModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <form method="POST" action="{{ url_for('proposal.submit_proposal') }}">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="proposalModalLabel">Submit Proposal</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Select Catalog Project (optional)</label>
+            <select class="form-select" name="catalog_id">
+              <option value="">-- Select from Catalog --</option>
+              {% for cp in catalog %}
+                <option value="{{ cp.id }}">{{ cp.title }} ({{ cp.supervisor.name }})</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Or enter custom title</label>
+            <input type="text" class="form-control" name="title">
+          </div>
+          <div id="descriptionField" class="mb-3">
+            <label class="form-label">Description</label>
+            <textarea class="form-control" name="description" rows="3" required></textarea>
+          </div>
+          <div id="supervisorField" class="mb-3">
+            <label class="form-label">Select Supervisor</label>
+            <select class="form-select" name="supervisor_id" required>
+              {% for user in supervisors %}
+                <option value="{{ user.id }}">{{ user.name }} ({{ user.email }})</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Submit Proposal</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const titleInput = document.querySelector('input[name="title"]');
+    const descriptionField = document.getElementById('descriptionField');
+    const supervisorField = document.getElementById('supervisorField');
+    const catalogSelect = document.querySelector('select[name="catalog_id"]');
+
+    function toggleFields() {
+      const titleNotEmpty = titleInput.value.trim().length > 0;
+      const catalogSelected = catalogSelect.value !== '';
+
+      catalogSelect.disabled = titleNotEmpty;
+
+      titleInput.disabled = catalogSelected;
+      titleInput.required = !catalogSelected;
+
+      descriptionField.style.display = titleNotEmpty ? '' : 'none';
+      descriptionField.querySelector('textarea').required = titleNotEmpty;
+
+      supervisorField.style.display = titleNotEmpty ? '' : 'none';
+      supervisorField.querySelector('select').required = titleNotEmpty;
+    }
+
+    titleInput.addEventListener('input', toggleFields);
+    catalogSelect.addEventListener('change', toggleFields);
+    toggleFields();
+  });
+</script>

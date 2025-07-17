@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Your Dashboard{% endblock %}
+{% block content %}
+<h2>Welcome {{ current_user.name }}</h2>
+{% if has_project %}
+  <h4>Your Project</h4>
+  <ul class="list-group">
+    {% for p in projects %}
+      <li class="list-group-item">
+        <strong>{{ p.proposal.title }}</strong><br>
+        Supervisor: {{ p.supervisor.name }}
+      <br>
+      <a href="{{ url_for("project.view_project", project_id=p.id) }}" class="btn btn-sm btn-outline-primary">View Project</a>
+      </li>
+    {% endfor %}
+  </ul>
+        <hr>
+{% endif %}
+
+{% if pending_proposals %}
+    <h4>Your Proposals</h4>
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Description</th>
+          <th>Supervisor</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for proposal in pending_proposals %}
+          <tr>
+            <td>{{ proposal.title }}</td>
+            <td>{{ proposal.description }}</td>
+            <td>{{ proposal.supervisor.name if proposal.supervisor else 'Not Assigned' }}</td>
+            <td>{{ proposal.status }}</td>
+            <td>
+              <form method="post" action="{{ url_for('proposal.withdraw_proposal', proposal_id=proposal.id) }}" style="display:inline;">
+                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to withdraw this proposal?');">Withdraw</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+        <hr>
+{% endif %}
+
+{% if not (pending_proposals or projects) %}
+        <p>You don’t have any proposals or projects yet.</p>
+
+  <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#proposalModal">Create Proposal</button>
+{% endif %}
+{% include 'modal_proposal.html' %}
+{% endblock %}

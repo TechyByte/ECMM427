@@ -1,0 +1,112 @@
+from flask_login import UserMixin
+
+from sqlalchemy import and_, or_
+from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.orm import relationship, validates
+from werkzeug.security import check_password_hash, generate_password_hash
+
+from models.Proposal import Proposal, ProposalStatus
+from models.Project import Project
+from models.ProjectMark import ProjectMark
+from exceptions import ActiveUserError
+from models.db import db
+
+class LoginUser(UserMixin):
+    def __init__(self, user):
+        self.id = user.id
+        self._user = user
+
+    @property
+    def email(self):
+        return self._user.email
+
+    @property
+    def name(self):
+        return self._user.name
+
+    def is_supervisor(self):
+        return self._user.is_supervisor
+
+    def is_admin(self):
+        return self._user.is_admin
+
+    def is_student(self):
+        return not self._user.is_supervisor and not self._user.is_admin
+
+    @property
+    def obj(self):
+        return self._user
+
+
+
+class User(db.Model):
+    __tablename__ = 'user'
+
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    name = db.Column(db.String(120), nullable=False)
+    password_hash = db.Column(db.String(128), nullable=False)
+
+    is_supervisor = db.Column(db.Boolean, default=False)
+    is_admin = db.Column(db.Boolean, default=False)
+    active = db.Column(db.Boolean, default=True)
+
+    projects = db.relationship('Project', back_populates='student', foreign_keys='Project.student_id')
+
+    proposals_submitted = relationship('Proposal', back_populates='student', foreign_keys='Proposal.student_id')
+    proposals_supervised = relationship('Proposal', back_populates='supervisor', foreign_keys='Proposal.supervisor_id')
+    catalog_proposals = relationship('CatalogProposal', back_populates='supervisor')
+    projects_supervised = relationship('Project', back_populates='supervisor', foreign_keys='Project.supervisor_id')
+    projects_marked = relationship('Project', back_populates='second_marker', foreign_keys='Project.second_marker_id')
+    marks_given = relationship('ProjectMark', back_populates='marker', foreign_keys='ProjectMark.marker_id')
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+    @hybrid_property
+    def has_unmarked(self):
+        return ProjectMark.query.filter(
+                (ProjectMark.marker_id == self.id) & (ProjectMark.finalised == False)
+                ).first()
+
+    @hybrid_property
+    def has_ongoing_project(self):
+        return Project.query.join(Proposal).filter(
+                and_(
+                    Proposal.status == ProposalStatus.ACCEPTED,
+                    ~Project.marks.any(), # No marks yet
+                    or_(
+                        Project.supervisor_id == self.id,
+                        Project.student_id == self.id
+                    )
+                )
+            ).first()
+
+    @hybrid_property
+    def has_pending(self):
+        return Proposal.query.filter(
+                and_(
+                    Proposal.status == ProposalStatus.PENDING,
+                    or_(
+                        Proposal.supervisor_id == self.id,
+                        Proposal.student_id == self.id
+                    )
+                )
+            ).first()
+
+    @validates('active')
+    def validate_active_status(self, key, value):
+        if not value:
+            if self.has_pending:
+                raise ActiveUserError("Cannot deactivate user with pending proposals.")
+            if self.has_ongoing_project:
+                raise ActiveUserError("Cannot deactivate user with ongoing projects.")
+            if self.has_unmarked:
+                raise ActiveUserError("Cannot deactivate user with unfinalised marks.")
+        return value
+
+    def is_student(self):
+        return not self.is_supervisor and not self.is_admin
