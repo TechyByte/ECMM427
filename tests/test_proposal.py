@@ -5,8 +5,8 @@ from datetime import datetime
 
 from exceptions import InvalidStudent, InvalidSupervisor, MaxProposalsReachedError
 
-from models.User import User
-from models.Proposal import Proposal, ProposalStatus
+from models import User, Proposal, Project
+from models.Proposal import ProposalStatus
 
 from models.db import db
 
@@ -186,6 +186,109 @@ class ProposalCreation(unittest.TestCase):
         db.session.commit()
 
         self.assertEqual(new_proposal.student, self.student_user)
+
+    def test_proposal_action_accepts_pending_proposal_and_creates_project(self):
+        proposal = Proposal(
+            title="Pending Proposal",
+            description="Description",
+            student=self.student_user,
+            supervisor=self.supervisor_user,
+            accepted_date=None,
+            rejected_date=None
+        )
+        db.session.add(proposal)
+        db.session.commit()
+
+        self.app_context.push()
+        with self.flask_app.test_client() as client:
+            with client.session_transaction() as session:
+                session['_user_id'] = self.supervisor_user.id
+            response = client.post(f'/proposal_action/{proposal.id}', data={'action': 'accept'}, follow_redirects=True)
+            self.assertEqual(response.status_code, 200)
+            self.assertIn(b'Proposal accepted and project created.', response.data)
+            self.assertIsNotNone(proposal.accepted_date)
+            self.assertEqual(Project.query.filter_by(proposal_id=proposal.id).count(), 1)
+
+    def test_proposal_action_rejects_pending_proposal(self):
+        proposal = Proposal(
+            title="Pending Proposal",
+            description="Description",
+            student=self.student_user,
+            supervisor=self.supervisor_user,
+            accepted_date=None,
+            rejected_date=None
+        )
+        db.session.add(proposal)
+        db.session.commit()
+
+        self.app_context.push()
+        with self.flask_app.test_client() as client:
+            with client.session_transaction() as session:
+                session['_user_id'] = self.supervisor_user.id
+            response = client.post(f'/proposal_action/{proposal.id}', data={'action': 'reject'}, follow_redirects=True)
+            self.assertEqual(response.status_code, 200)
+            self.assertIn(b'Proposal rejected.', response.data)
+            self.assertIsNotNone(proposal.rejected_date)
+
+    def test_proposal_action_prevents_non_supervisor_from_processing_proposal(self):
+        proposal = Proposal(
+            title="Pending Proposal",
+            description="Description",
+            student=self.student_user,
+            supervisor=self.supervisor_user,
+            accepted_date=None,
+            rejected_date=None
+        )
+        db.session.add(proposal)
+        db.session.commit()
+
+        self.app_context.push()
+        with self.flask_app.test_client() as client:
+            with client.session_transaction() as session:
+                session['_user_id'] = self.student_user.id
+            response = client.post(f'/proposal_action/{proposal.id}', data={'action': 'accept'}, follow_redirects=True)
+            self.assertEqual(response.status_code, 403)
+
+    def test_proposal_action_prevents_processing_already_processed_proposal(self):
+        proposal = Proposal(
+            title="Processed Proposal",
+            description="Description",
+            student=self.student_user,
+            supervisor=self.supervisor_user,
+            accepted_date=datetime.utcnow(),
+            rejected_date=None
+        )
+        db.session.add(proposal)
+        db.session.commit()
+
+        self.app_context.push()
+        with self.flask_app.test_client() as client:
+            with client.session_transaction() as session:
+                session['_user_id'] = self.supervisor_user.id
+            response = client.post(f'/proposal_action/{proposal.id}', data={'action': 'reject'}, follow_redirects=True)
+            self.assertEqual(response.status_code, 200)
+            self.assertIn(b'Proposal already processed.', response.data)
+
+    def test_proposal_action_handles_invalid_action(self):
+        proposal = Proposal(
+            title="Pending Proposal",
+            description="Description",
+            student=self.student_user,
+            supervisor=self.supervisor_user,
+            accepted_date=None,
+            rejected_date=None
+        )
+        db.session.add(proposal)
+        db.session.commit()
+
+        self.app_context.push()
+        with self.flask_app.test_client() as client:
+            with client.session_transaction() as session:
+                session['_user_id'] = self.supervisor_user.id
+            response = client.post(f'/proposal_action/{proposal.id}', data={'action': 'invalid_action'},
+                                   follow_redirects=True)
+            self.assertEqual(response.status_code, 200)
+            self.assertIn(b'Invalid action.', response.data)
 
 if __name__ == '__main__':
     unittest.main()

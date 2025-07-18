@@ -1,0 +1,29 @@
+<div class="modal fade" id="createMeetingModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form method="post" action="{{ url_for('project.create_meeting', project_id=project.id) }}">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Create Meeting</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label>Start Time:</label>
+            <input type="datetime-local" name="meeting_start" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label>End Time:</label>
+            <input type="datetime-local" name="meeting_end" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label>Location:</label>
+            <input type="text" name="location" class="form-control">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-success">Create</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>

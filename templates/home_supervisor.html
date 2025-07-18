@@ -20,7 +20,7 @@
 </ul>
 
 <h4>Your Projects</h4>
-<ul class="list-group">
+<ul class="list-group mb-4">
   {% for p in projects %}
     <li class="list-group-item">
       {{ p.proposal.title }} ({{ p.student.name }})
@@ -30,4 +30,18 @@
     <li class="list-group-item text-muted">No projects assigned</li>
   {% endfor %}
 </ul>
+
+<h4>Submitted Projects You Are Marking</h4>
+<ul class="list-group mb-4">
+  {% for p in marking_projects %}
+    <li class="list-group-item">
+      {{ p.proposal.title }} ({{ p.student.name }})
+      <a href="{{ url_for('project.view_project', project_id=p.id) }}" class="btn btn-sm btn-outline-primary">View Project</a>
+    </li>
+  {% else %}
+    <li class="list-group-item text-muted">No submitted projects to mark</li>
+  {% endfor %}
+</ul>
+
+
 {% endblock %}

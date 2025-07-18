@@ -5,7 +5,7 @@
 <p><strong>Student:</strong> {{ project.student.name }} | <strong>Supervisor:</strong> {{ project.supervisor.name }}{% if project.second_marker %} | <strong>Second Marker:</strong> {{ project.second_marker.name }}{% endif %}</p>
 <p><strong>Status:</strong> {{ project.status.value if project.status else 'N/A' }}</p>
 
-{% if can_submit %}
+{% if can_submit and not project.is_submitted %}
 <form method="post" action="{{ url_for('project.submit_project', project_id=project.id) }}">
     <button class="btn btn-warning">Mark as Submitted</button>
 </form>
@@ -16,6 +16,7 @@
 {% if can_create_meeting %}
 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createMeetingModal">Create Meeting</button>
 {% endif %}
+{%  if meetings %}
 <table class="table mt-3">
     <thead>
         <tr>
@@ -25,7 +26,7 @@
             <th>Location</th>
             <th>Attendance</th>
             <th>Outcome</th>
-            <th>Actions</th>
+            {% if can_create_meeting %}<th>Actions</th>{% endif %}
         </tr>
     </thead>
     <tbody>
@@ -36,7 +37,7 @@
             <td>{{ meeting.meeting_end.strftime('%H:%M') if meeting.meeting_end else '' }}</td>
             <td>{{ meeting.location or 'unspecified' }}</td>
             <td>
-                {% if meeting.has_started %}
+                {% if meeting.has_started or meeting.attendance %}
                     {{ 'Yes' if meeting.attendance else 'No' }}
                 {% else %}
                     <span class="text-muted">tbc</span>
@@ -49,75 +50,21 @@
                     <span class="text-muted">blank</span>
                 {% endif %}
             </td>
-            <td>
-                <button class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#editMeetingModal{{ meeting.id }}">Edit</button>
-            </td>
+            {% if can_create_meeting %}
+                <td>
+                    <button class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#editMeetingModal{{ meeting.id }}">Edit</button>
+                </td>
+            {% endif %}
         </tr>
         {# Edit Meeting Modal #}
-        {# TODO: Create modal_edit_meeting.html template #}
-        <div class="modal fade" id="editMeetingModal{{ meeting.id }}" tabindex="-1">
-          <div class="modal-dialog">
-            <form method="post" action="{{ url_for('project.edit_meeting', meeting_id=meeting.id) }}">
-              <div class="modal-content">
-                <div class="modal-header">
-                  <h5 class="modal-title">Edit Meeting</h5>
-                  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                  <div class="mb-3">
-                    <label>Attendance:</label>
-                    <select name="attendance" class="form-select">
-                      <option value="1" {% if meeting.attendance %}selected{% endif %}>Attended</option>
-                      <option value="0" {% if not meeting.attendance %}selected{% endif %}>Absent</option>
-                    </select>
-                  </div>
-                  <div class="mb-3">
-                    <label>Outcome Notes:</label>
-                    <textarea name="outcome_notes" class="form-control">{{ meeting.outcome_notes or '' }}</textarea>
-                  </div>
-                </div>
-                <div class="modal-footer">
-                  <button type="submit" class="btn btn-primary">Save</button>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
+        {% include "modal_edit_meeting.html" with context %}
     {% endfor %}
     </tbody>
 </table>
+    {% endif %}
 
 {# Create Meeting Modal #}
-{# TODO: Create modal_create_meeting.html template #}
-<div class="modal fade" id="createMeetingModal" tabindex="-1">
-  <div class="modal-dialog">
-    <form method="post" action="{{ url_for('project.create_meeting', project_id=project.id) }}">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Create Meeting</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <div class="mb-3">
-            <label>Start Time:</label>
-            <input type="datetime-local" name="meeting_start" class="form-control" required>
-          </div>
-          <div class="mb-3">
-            <label>End Time:</label>
-            <input type="datetime-local" name="meeting_end" class="form-control">
-          </div>
-          <div class="mb-3">
-            <label>Location:</label>
-            <input type="text" name="location" class="form-control">
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="submit" class="btn btn-success">Create</button>
-        </div>
-      </div>
-    </form>
-  </div>
-</div>
+{% include "modal_create_meeting.html" with context %}
 
 <hr>
 <h3>Marking</h3>
@@ -128,7 +75,6 @@
             <th>Grade</th>
             <th>Feedback</th>
             <th>Finalised</th>
-            <th>Reconciled</th>
             <th>Actions</th>
         </tr>
     </thead>
@@ -136,48 +82,56 @@
     {% for mark in marks %}
         <tr>
             <td>{{ mark.marker.name }}</td>
-            <td>{{ mark.grade }}</td>
+            <td>{% if mark.marker.id == current_user.id or current_user.obj.is_admin or (final_mark_is_ready and current_user.id == project.student_id )%}{{ mark.mark }}{% else %}hidden{% endif %}</td>
             <td>{{ mark.feedback }}</td>
             <td>{{ 'Yes' if mark.finalised else 'No' }}</td>
-            <td>{{ 'Yes' if mark.is_reconciled else 'No' }}</td>
             <td>
                 {% if can_mark and mark.marker_id == current_user.id and not mark.finalised %}
-                <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#markModal{{ mark.id }}">Submit Mark</button>
+                <button class="btn btn-sm btn{% if not project.is_submitted %}-outline{% endif %}-primary" data-bs-toggle="modal" data-bs-target="#markModal{{ mark.id }}" {% if not project.is_submitted %}disabled{% endif %}>Submit Mark</button>
                 {% endif %}
             </td>
         </tr>
         {# Mark Modal #}
-        {# TODO: Create modal_mark_project.html template #}
-        <div class="modal fade" id="markModal{{ mark.id }}" tabindex="-1">
-          <div class="modal-dialog">
-            <form method="post" action="{{ url_for('project.submit_mark', mark_id=mark.id) }}">
-              <div class="modal-content">
-                <div class="modal-header">
-                  <h5 class="modal-title">Submit Mark</h5>
-                  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                  <div class="mb-3">
-                    <label>Grade (0-100):</label>
-                    <input type="number" name="grade" min="0" max="100" step="0.01" class="form-control" value="{{ mark.grade }}" required>
-                  </div>
-                  <div class="mb-3">
-                    <label>Feedback:</label>
-                    <textarea name="feedback" class="form-control">{{ mark.feedback or '' }}</textarea>
-                  </div>
-                </div>
-                <div class="modal-footer">
-                  <button type="submit" class="btn btn-success">Submit</button>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
+        {% include "modal_mark_project.html" with context %}
     {% endfor %}
     </tbody>
 </table>
 
-<p><strong>Final Grade:</strong> {{ project.get_final_grade() or 'Pending' }}</p>
+{% if final_mark_is_ready %}
+<p><strong>Final Grade:</strong> {{ project.get_final_mark() }}</p>
+{% endif %}
 
+{# Add Second Marker Button for Admin if odd number of marks #}
+{% if project.marks|length % 2 != 0 and current_user.obj.is_admin %}
+  <button class="btn btn-warning mt-3" data-bs-toggle="modal" data-bs-target="#addMarkerModal">Add Additional Marker</button>
+  <!-- Add Second Marker Modal -->
+  <div class="modal fade" id="addMarkerModal" tabindex="-1">
+    <div class="modal-dialog">
+      <form method="post" action="{{ url_for('project.add_marker', project_id=project.id) }}">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Assign Second Marker</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="add_marker_id">Select additional marker:</label>
+              <select name="add_marker_id" class="form-select" required>
+                {% for supervisor in supervisors %}
+                  {% if supervisor.id != project.supervisor_id %}
+                    <option value="{{ supervisor.id }}">{{ supervisor.name }}</option>
+                  {% endif %}
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-success">Assign</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endif %}
 {% endblock %}
 

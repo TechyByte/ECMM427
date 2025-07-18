@@ -15,5 +15,9 @@ class MaxProposalsReachedError(ValueError):
     pass
 
 class ProjectNotSubmittedError(ValueError):
-    # This exception is raised when a project fails to submit.
+    # This exception is raised when a project fails to submit or if an action requires a submitted project.
+    pass
+
+class NoConcordantProjectMarks(ValueError):
+    #  This exception is raised when a project has no concordant marks, thus requires additional marking
     pass

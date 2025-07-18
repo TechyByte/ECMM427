@@ -1,3 +1,4 @@
+from flask import flash
 from flask_login import UserMixin
 
 from sqlalchemy import and_, or_
@@ -10,33 +11,6 @@ from models.Project import Project
 from models.ProjectMark import ProjectMark
 from exceptions import ActiveUserError
 from models.db import db
-
-class LoginUser(UserMixin):
-    def __init__(self, user):
-        self.id = user.id
-        self._user = user
-
-    @property
-    def email(self):
-        return self._user.email
-
-    @property
-    def name(self):
-        return self._user.name
-
-    def is_supervisor(self):
-        return self._user.is_supervisor
-
-    def is_admin(self):
-        return self._user.is_admin
-
-    def is_student(self):
-        return not self._user.is_supervisor and not self._user.is_admin
-
-    @property
-    def obj(self):
-        return self._user
-
 
 
 class User(db.Model):
@@ -60,10 +34,15 @@ class User(db.Model):
     projects_marked = relationship('Project', back_populates='second_marker', foreign_keys='Project.second_marker_id')
     marks_given = relationship('ProjectMark', back_populates='marker', foreign_keys='ProjectMark.marker_id')
 
-    def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
+    def set_password(self, password: str) -> bool:
+        try:
+            self.password_hash = generate_password_hash(password)
+            return True
+        except Exception as e:
+            flash(f"Error setting password: {e}")
+            return False
 
-    def check_password(self, password):
+    def check_password(self, password: str) -> bool:
         return check_password_hash(self.password_hash, password)
 
     @hybrid_property
@@ -98,7 +77,7 @@ class User(db.Model):
             ).first()
 
     @validates('active')
-    def validate_active_status(self, key, value):
+    def validate_active_status(self, key, value: bool):
         if not value:
             if self.has_pending:
                 raise ActiveUserError("Cannot deactivate user with pending proposals.")
@@ -110,3 +89,31 @@ class User(db.Model):
 
     def is_student(self):
         return not self.is_supervisor and not self.is_admin
+
+
+class LoginUser(UserMixin):
+    def __init__(self, user: User):
+        self.id = user.id
+        self._user = user
+
+    @property
+    def email(self):
+        return self._user.email
+
+    @property
+    def name(self):
+        return self._user.name
+
+    def is_supervisor(self):
+        return self._user.is_supervisor
+
+    def is_admin(self):
+        return self._user.is_admin
+
+    def is_student(self):
+        return not self._user.is_supervisor and not self._user.is_admin
+
+    @property
+    def obj(self):
+        return self._user
+

@@ -69,8 +69,7 @@ def proposal_action(proposal_id):
         db.session.flush()  # get project.id
 
         # Create ProjectMark for supervisor
-        db.session.add(ProjectMark(project_id=project.id, marker_id=project.supervisor_id, grade=0.0, finalised=False,
-                                   is_reconciled=False))
+        db.session.add(ProjectMark(project_id=project.id, marker_id=project.supervisor_id))
 
         flash("Proposal accepted and project created.")
     elif action == "reject":

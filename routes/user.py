@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import current_user, login_required
 from werkzeug.security import generate_password_hash
 
-from models import db, User, Proposal, Project, CatalogProposal
+from models import db, User, Proposal, Project, CatalogProposal, ProjectMark
 from models.Proposal import ProposalStatus
 user_bp = Blueprint('user', __name__)
 
@@ -20,7 +20,8 @@ def home():
         # Supervisor view
         proposals = Proposal.query.filter_by(supervisor_id=user.id).all()
         projects = Project.query.filter_by(supervisor_id=user.id).all()
-        return render_template("home_supervisor.html", proposals=proposals, projects=projects)
+        marking_projects = [pm.project for pm in ProjectMark.query.filter_by(marker_id=user.id).all() if pm.project.is_submitted]
+        return render_template("home_supervisor.html", proposals=proposals, projects=projects, marking_projects=marking_projects)
 
     else:
         # Student view
@@ -65,4 +66,3 @@ def create_user():
         flash(f"Error: {e}")
 
     return redirect(url_for("user.home"))
-

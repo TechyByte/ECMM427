@@ -1,13 +1,16 @@
 from sqlalchemy import ForeignKey
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship
+
+from exceptions import NoConcordantProjectMarks
 from models.db import db
 from enum import Enum
 
 class ProjectStatus(Enum):
     ACTIVE = "active"
     SUBMITTED = "submitted"
-    MARKED = "marked"
+    MARKING = "marked provisionally"
+    MARKS_CONFIRMED = "marks confirmed"
 
 class Project(db.Model):
     __tablename__ = 'project'
@@ -26,18 +29,61 @@ class Project(db.Model):
     second_marker = relationship('User', back_populates='projects_marked', foreign_keys=[second_marker_id])
     marks = relationship('ProjectMark', back_populates='project', cascade="all, delete-orphan")
 
+    submitted_datetime = db.Column(db.DateTime, nullable=True)
+
+    @hybrid_property
+    def is_submitted(self):
+        return self.submitted_datetime is not None
+
+    @hybrid_property
+    def is_finalised(self):
+        # Project is finalised if all pairs of marks are finalised and concordant, and there are no unpaired marks
+        marks = [m for m in self.marks if not m.is_reconciled]
+        if len(marks) == 0:
+            return False
+        if len(marks) % 2 != 0:
+            return False
+        # Check all pairs for concordancy (difference <= 5)
+        marks_sorted = sorted(marks, key=lambda m: m.id)
+        for i in range(0, len(marks_sorted), 2):
+            m1, m2 = marks_sorted[i], marks_sorted[i+1]
+            if not (m1.finalised and m2.finalised):
+                return False
+            if abs(m1.mark - m2.mark) > 5:
+                return False
+        return True
 
     @hybrid_property
     def status(self):
-        #  TODO: Implement logic to determine project status based on proposal status and marks
+        if self.is_submitted:
+            try:
+               final_mark = self.get_final_mark()
+            except NoConcordantProjectMarks:
+                return ProjectStatus.SUBMITTED
+            if final_mark is not None:
+                return ProjectStatus.MARKS_CONFIRMED
+            else:
+                return ProjectStatus.MARKING
         return ProjectStatus.ACTIVE
 
-    def get_final_grade(self):
-        final_mark = next((m for m in self.marks if m.is_reconciled), None)
-        if final_mark:
-            return final_mark.grade
-        individual = [m.grade for m in self.marks if not m.is_reconciled and m.finalised]
-        if len(individual) == 2 and abs(individual[0] - individual[1]) <= 5:
-            return round(sum(individual) / 2, 2)
-        return None
+    def get_final_mark(self):
+        # Only compute if there are pairs and all pairs are concordant
+        marks = [m for m in self.marks if m.finalised]
+        if len(marks) == 0 or len(marks) % 2 != 0:
+            raise NoConcordantProjectMarks("Project does not have a valid pair of marks for reconciliation.")
+
+        marks_sorted = sorted(marks, key=lambda m: m.id)
+
+        for i in range(0, len(marks_sorted), 2):
+            m1, m2 = marks_sorted[i], marks_sorted[i+1]
+            if abs(m1.mark - m2.mark) <= 5:
+                return (m1.mark + m2.mark) / 2
+        raise NoConcordantProjectMarks("No concordant marks found for project.")
+
+    @hybrid_property
+    def final_mark(self):
+        try:
+            return self.get_final_mark()
+        except NoConcordantProjectMarks:
+            return None
 
