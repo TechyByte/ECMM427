@@ -16,7 +16,7 @@ class ProjectMark(db.Model):
     feedback = db.Column(db.Text, nullable=True)
     submitted_at = db.Column(db.DateTime, nullable=True)
 
-    finalised = db.Column(db.Boolean, default=False)  # True once submitted
+    finalised = db.Column(db.Boolean, default=False, nullable=False)  # True once submitted
 
     project = relationship('Project', back_populates='marks')
     marker = relationship('User', back_populates='marks_given')

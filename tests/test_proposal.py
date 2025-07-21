@@ -61,7 +61,6 @@ class ProposalCreation(unittest.TestCase):
         self.inactive_supervisor_user.set_password("password")
         db.session.add(self.inactive_supervisor_user)
         db.session.commit()
-        db.session.commit()
 
     def tearDown(self):
         db.drop_all()

@@ -135,7 +135,7 @@ def submit_project(project_id):
 @login_required
 def add_marker(project_id):
     project = Project.query.get_or_404(project_id)
-    if not current_user.is_admin:
+    if not current_user.obj.is_admin:
         flash('Only admins can assign a second marker.', 'danger')
         return redirect(url_for('project.view_project', project_id=project_id))
     add_marker_id = request.form.get('add_marker_id')
