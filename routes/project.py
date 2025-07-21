@@ -22,14 +22,14 @@ def view_project(project_id):
     try:
         _ = project.get_final_mark()
         final_mark_is_ready = True
-    except NoConcordantProjectMarks as e:
+    except NoConcordantProjectMarks:
         final_mark_is_ready = False
     user_role = 'student' if current_user.id == project.student_id else (
         'supervisor' if current_user.id == project.supervisor_id else (
             'second_marker' if current_user.id == project.second_marker_id else (
                 'admin' if current_user.is_admin else 'other')))
     can_create_meeting = user_role == 'supervisor'
-    can_mark = (current_user.is_supervisor) # TODO: and project.status == 'submitted'
+    can_mark = user_role in ['supervisor', 'second_marker'] # TODO: and project.status == 'submitted'
     can_submit = user_role == 'student' # TODO: and project.status == 'active'
     supervisors = User.query.filter_by(is_supervisor=True, active=True).all()
     return render_template('project.html', project=project, meetings=meetings, marks=marks, user_role=user_role, can_create_meeting=can_create_meeting, can_mark=can_mark, can_submit=can_submit, final_mark_is_ready=final_mark_is_ready, supervisors=supervisors)

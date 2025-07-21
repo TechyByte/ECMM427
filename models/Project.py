@@ -16,7 +16,7 @@ class Project(db.Model):
     __tablename__ = 'project'
 
     id = db.Column(db.Integer, primary_key=True)
-    proposal_id = db.Column(db.Integer, ForeignKey('proposal.id'), nullable=False)
+    proposal_id = db.Column(db.Integer, ForeignKey('proposal.id'), nullable=False, unique=True)
 
     student_id = db.Column(db.Integer, ForeignKey('user.id'), nullable=False)
     supervisor_id = db.Column(db.Integer, ForeignKey('user.id'), nullable=False)

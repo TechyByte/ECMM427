@@ -14,6 +14,10 @@ def submit_proposal():
         flash("Only students can submit proposals.")
         return redirect(url_for("user.home"))
 
+    if not ((request.form.get("title") and request.form.get("description")) or request.form.get("catalog_id")):
+        flash("Error submitting proposal: Title and description are required.", "error")
+        return redirect(url_for("user.home"))
+
     user = current_user.obj
     title = request.form.get("title")
     description = request.form.get("description")

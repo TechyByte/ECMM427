@@ -1,7 +1,7 @@
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship, validates
 
-from exceptions import ActiveUserError
+from exceptions import ActiveUserError, InvalidSupervisor
 from models.db import db
 
 class CatalogProposal(db.Model):
@@ -16,6 +16,8 @@ class CatalogProposal(db.Model):
 
     @validates('supervisor')
     def validate_supervisor(self, key, user):
+        if user is None:
+            raise InvalidSupervisor("Catalog proposals must be assigned to a supervisor.")
         if not (user.is_supervisor and user.active):
             raise ActiveUserError("Catalog proposals must be assigned to an active supervisor.")
         return user

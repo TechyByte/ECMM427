@@ -1,11 +1,15 @@
 import os
+import sqlite3
 import tempfile
 import unittest
+import unittest.mock
 from datetime import datetime
+
+import sqlalchemy
 
 from exceptions import InvalidStudent, InvalidSupervisor, MaxProposalsReachedError
 
-from models import User, Proposal, Project
+from models import User, Proposal, Project, CatalogProposal
 from models.Proposal import ProposalStatus
 
 from models.db import db
@@ -46,6 +50,17 @@ class ProposalCreation(unittest.TestCase):
         )
         self.supervisor_user.set_password("password")
         db.session.add(self.supervisor_user)
+
+        self.inactive_supervisor_user = User(
+            email="inactive_supervisor@example.com",
+            name="Inactive Supervisor",
+            is_supervisor=True,
+            is_admin=False,
+            active=False
+        )
+        self.inactive_supervisor_user.set_password("password")
+        db.session.add(self.inactive_supervisor_user)
+        db.session.commit()
         db.session.commit()
 
     def tearDown(self):
@@ -55,14 +70,12 @@ class ProposalCreation(unittest.TestCase):
         os.unlink(self.db_path)
 
     def test_validates_student_accepts_regular_user(self):
-        student_user = User(is_supervisor=False, is_admin=False)
-        proposal = Proposal(student=student_user)
-        self.assertEqual(proposal.student, student_user)
+        proposal = Proposal(student=self.student_user)
+        self.assertEqual(proposal.student, self.student_user)
 
     def test_validates_student_rejects_user_with_supervisor_flag(self):
-        supervisor = User(is_supervisor=True, is_admin=False)
         with self.assertRaisesRegex(InvalidStudent, "Received Supervisor"):
-            Proposal(student=supervisor)
+            Proposal(student=self.supervisor_user)
 
     def test_validates_student_rejects_user_with_admin_flag(self):
         admin = User(is_supervisor=False, is_admin=True)
@@ -70,24 +83,20 @@ class ProposalCreation(unittest.TestCase):
             Proposal(student=admin)
 
     def test_validates_student_rejects_user_with_both_flags(self):
-        invalid_user = User(is_supervisor=True, is_admin=True)
         with self.assertRaisesRegex(InvalidStudent, "Received Supervisor"):
-            Proposal(student=invalid_user)
+            Proposal(student=self.supervisor_user)
 
     def test_validates_supervisor_accepts_active_supervisor(self):
-        active_supervisor = User(is_supervisor=True, is_admin=False, active=True)
-        proposal = Proposal(supervisor=active_supervisor)
-        self.assertEqual(proposal.supervisor, active_supervisor)
+        proposal = Proposal(supervisor=self.supervisor_user)
+        self.assertEqual(proposal.supervisor, self.supervisor_user)
 
     def test_validates_supervisor_rejects_inactive_supervisor(self):
-        inactive_supervisor = User(is_supervisor=True, is_admin=False, active=False)
         with self.assertRaisesRegex(InvalidSupervisor, "Supervisor must be active."):
-            Proposal(supervisor=inactive_supervisor)
+            Proposal(supervisor=self.inactive_supervisor_user)
 
     def test_validates_supervisor_rejects_non_supervisor(self):
-        non_supervisor = User(is_supervisor=False, is_admin=False, active=True)
         with self.assertRaisesRegex(InvalidSupervisor, "User is not supervisor."):
-            Proposal(supervisor=non_supervisor)
+            Proposal(supervisor=self.student_user)
 
     def test_proposal_status_returns_accepted_when_accepted_date_is_set_and_rejected_date_is_none(self):
         proposal = Proposal(accepted_date=datetime.utcnow(), rejected_date=None)
@@ -289,6 +298,318 @@ class ProposalCreation(unittest.TestCase):
                                    follow_redirects=True)
             self.assertEqual(response.status_code, 200)
             self.assertIn(b'Invalid action.', response.data)
+
+    def test_withdraws_pending_proposal_successfully(self):
+        proposal = Proposal(
+            title="Pending Proposal",
+            description="Description",
+            student=self.student_user,
+            supervisor=self.supervisor_user,
+            accepted_date=None,
+            rejected_date=None
+        )
+        db.session.add(proposal)
+        db.session.commit()
+
+        self.app_context.push()
+        with self.flask_app.test_client() as client:
+            with client.session_transaction() as session:
+                session['_user_id'] = self.student_user.id
+            response = client.post(f'/withdraw_proposal/{proposal.id}', follow_redirects=True)
+            self.assertEqual(response.status_code, 200)
+            self.assertIn(b'Proposal withdrawn successfully.', response.data)
+            self.assertIsNone(Proposal.query.get(proposal.id))
+
+    def test_prevents_withdrawing_proposal_by_non_owner(self):
+        proposal = Proposal(
+            title="Pending Proposal",
+            description="Description",
+            student=self.student_user,
+            supervisor=self.supervisor_user,
+            accepted_date=None,
+            rejected_date=None
+        )
+        db.session.add(proposal)
+        db.session.commit()
+
+        self.app_context.push()
+        with self.flask_app.test_client() as client:
+            with client.session_transaction() as session:
+                session['_user_id'] = self.supervisor_user.id
+            response = client.post(f'/withdraw_proposal/{proposal.id}', follow_redirects=True)
+            self.assertEqual(response.status_code, 403)
+
+    def test_prevents_withdrawing_non_pending_proposal(self):
+        proposal = Proposal(
+            title="Accepted Proposal",
+            description="Description",
+            student=self.student_user,
+            supervisor=self.supervisor_user,
+            accepted_date=datetime.utcnow(),
+            rejected_date=None
+        )
+        db.session.add(proposal)
+        db.session.commit()
+
+        self.app_context.push()
+        with self.flask_app.test_client() as client:
+            with client.session_transaction() as session:
+                session['_user_id'] = self.student_user.id
+            response = client.post(f'/withdraw_proposal/{proposal.id}', follow_redirects=True)
+            self.assertEqual(response.status_code, 200)
+            self.assertIn(b'Only pending proposals can be withdrawn.', response.data)
+            self.assertIsNotNone(Proposal.query.get(proposal.id))
+
+    def test_handles_error_during_proposal_withdrawal(self):
+        proposal = Proposal(
+            title="Pending Proposal",
+            description="Description",
+            student=self.student_user,
+            supervisor=self.supervisor_user,
+            accepted_date=None,
+            rejected_date=None
+        )
+        db.session.add(proposal)
+        db.session.commit()
+
+        self.app_context.push()
+        with self.flask_app.test_client() as client:
+            with client.session_transaction() as session:
+                session['_user_id'] = self.student_user.id
+            with unittest.mock.patch.object(db.session, 'delete', side_effect=Exception("Database error")):
+                response = client.post(f'/withdraw_proposal/{proposal.id}', follow_redirects=True)
+                self.assertEqual(response.status_code, 200)
+                self.assertIn(b'Error withdrawing proposal: Database error', response.data)
+                self.assertIsNotNone(Proposal.query.get(proposal.id))
+
+    def test_associates_proposal_with_project_successfully(self):
+        proposal = Proposal(
+            title="Test Proposal",
+            description="Test Description",
+            student=self.student_user,
+            supervisor=self.supervisor_user
+        )
+        project = Project(
+            proposal=proposal,
+            student=self.student_user,
+            supervisor=self.supervisor_user
+        )
+        db.session.add(proposal)
+        db.session.add(project)
+        db.session.commit()
+
+        self.assertEqual(project.proposal, proposal)
+        self.assertEqual(proposal.project, project)
+
+
+    def test_prevents_associating_project_with_null_proposal(self):
+        project = Project(
+            proposal=None,
+            student=self.student_user,
+            supervisor=self.supervisor_user
+        )
+        with self.assertRaisesRegex(Exception, "NOT NULL constraint failed"):
+            db.session.add(project)
+            db.session.commit()
+
+    def test_prevents_associating_multiple_projects_with_same_proposal(self):
+        proposal = Proposal(
+            title="Test Proposal",
+            description="Test Description",
+            student=self.student_user,
+            supervisor=self.supervisor_user
+        )
+
+        project1 = Project(
+            proposal=proposal,
+            student=self.student_user,
+            supervisor=self.supervisor_user
+        )
+
+        db.session.add(proposal)
+        db.session.add(project1)
+
+        project2 = Project(
+            proposal=proposal,
+            student=self.student_user,
+            supervisor=self.supervisor_user
+        )
+
+        try:
+            db.session.add(project2)
+            db.session.commit()
+            self.fail("IntegrityError not raised")
+        except sqlalchemy.exc.IntegrityError as e:
+            # Check both the SQLAlchemy error and the original DBAPI error
+            error_message = str(e) + str(getattr(e, "orig", ""))
+            self.assertIn("UNIQUE constraint failed", error_message)
+            db.session.rollback()
+
+    def test_handles_error_during_proposal_submission(self):
+        self.app_context.push()
+        with self.flask_app.test_client() as client:
+            with client.session_transaction() as session:
+                session['_user_id'] = self.student_user.id
+            with unittest.mock.patch.object(db.session, 'commit', side_effect=Exception("Database error")):
+                response = client.post('/submit_proposal', data={
+                    'title': 'Test Proposal',
+                    'description': 'Test Description',
+                    'supervisor_id': self.supervisor_user.id
+                }, follow_redirects=True)
+                self.assertEqual(response.status_code, 200)
+                self.assertIn(b'Error: Database error', response.data)
+
+    def test_prevents_proposal_submission_by_non_student(self):
+        self.app_context.push()
+        with self.flask_app.test_client() as client:
+            with client.session_transaction() as session:
+                session['_user_id'] = self.supervisor_user.id
+            response = client.post('/submit_proposal', data={
+                'title': 'Test Proposal',
+                'description': 'Test Description',
+                'supervisor_id': self.supervisor_user.id
+            }, follow_redirects=True)
+            self.assertEqual(response.status_code, 200)
+            self.assertIn(b'Only students can submit proposals.', response.data)
+
+    def test_prevents_proposal_submission_with_invalid_supervisor(self):
+        self.app_context.push()
+        with self.flask_app.test_client() as client:
+            with client.session_transaction() as session:
+                session['_user_id'] = self.student_user.id
+            response = client.post('/submit_proposal', data={
+                'title': 'Test Proposal',
+                'description': 'Test Description',
+                'supervisor_id': 9999
+            }, follow_redirects=True)
+            self.assertEqual(response.status_code, 200)
+            self.assertIn(b'Error: invalid supervisor', response.data)
+
+    def test_retrieves_supervisor_from_catalog_proposal(self):
+        catalog_proposal = CatalogProposal(
+            title="Catalog Proposal",
+            description="Description",
+            supervisor=self.supervisor_user
+        )
+        db.session.add(catalog_proposal)
+        db.session.commit()
+
+        self.assertEqual(catalog_proposal.supervisor, self.supervisor_user)
+
+    def test_assigns_supervisor_from_catalog_proposal_via_submit_proposal(self):
+        catalog_proposal = CatalogProposal(
+            title="Catalog Proposal",
+            description="Description",
+            supervisor=self.supervisor_user
+        )
+        db.session.add(catalog_proposal)
+        db.session.commit()
+
+        self.app_context.push()
+        with self.flask_app.test_client() as client:
+            with client.session_transaction() as session:
+                session['_user_id'] = self.student_user.id
+            response = client.post('/submit_proposal', data={
+                'catalog_id': catalog_proposal.id
+            }, follow_redirects=True)
+            self.assertEqual(response.status_code, 200)
+            proposal = Proposal.query.filter_by(student_id=self.student_user.id,
+                                                catalog_proposal_id=catalog_proposal.id).first()
+            self.assertIsNotNone(proposal)
+            self.assertEqual(proposal.supervisor, catalog_proposal.supervisor)
+
+    def test_prevents_submission_with_empty_title_and_description(self):
+        self.app_context.push()
+        with self.flask_app.test_client() as client:
+            with client.session_transaction() as session:
+                session['_user_id'] = self.student_user.id
+            response = client.post('/submit_proposal', data={
+                'title': '',
+                'description': '',
+                'supervisor_id': self.supervisor_user.id
+            }, follow_redirects=True)
+            self.assertEqual(response.status_code, 200)
+            self.assertIn(b'Error submitting proposal: Title and description are required.', response.data)
+
+    def test_prevents_submission_with_invalid_catalog_id(self):
+        self.app_context.push()
+        with self.flask_app.test_client() as client:
+            with client.session_transaction() as session:
+                session['_user_id'] = self.student_user.id
+            response = client.post('/submit_proposal', data={
+                'catalog_id': 'invalid'
+            }, follow_redirects=True)
+            self.assertEqual(response.status_code, 404)
+
+    def test_prevents_submission_with_inactive_supervisor(self):
+        self.app_context.push()
+        with self.flask_app.test_client() as client:
+            with client.session_transaction() as session:
+                session['_user_id'] = self.student_user.id
+            response = client.post('/submit_proposal', data={
+                'title': 'Test Proposal',
+                'description': 'Test Description',
+                'supervisor_id': self.inactive_supervisor_user.id
+            }, follow_redirects=True)
+            self.assertEqual(response.status_code, 200)
+            self.assertIn(b'Error: invalid supervisor', response.data)
+
+
+    def test_handles_missing_supervisor_in_catalog_proposal(self):
+        try:
+            catalog_proposal = CatalogProposal(
+                title="Catalog Proposal",
+                description="Description",
+                supervisor=None
+            )
+            db.session.add(catalog_proposal)
+            db.session.commit()
+            self.fail("InvalidSupervisor not raised")
+        except InvalidSupervisor as e:
+            self.assertEqual(str(e), "Catalog proposals must be assigned to a supervisor.")
+            db.session.rollback()
+
+    def test_displays_pending_proposal_on_student_home(self):
+        proposal = Proposal(
+            title="Pending Test Proposal",
+            description="Description",
+            student=self.student_user,
+            supervisor=self.supervisor_user,
+            accepted_date=None,
+            rejected_date=None
+        )
+        db.session.add(proposal)
+        db.session.commit()
+
+        self.app_context.push()
+        with self.flask_app.test_client() as client:
+            with client.session_transaction() as session:
+                session['_user_id'] = self.student_user.id
+            response = client.get('/')
+            self.assertEqual(response.status_code, 200)
+            self.assertIn(b'Pending Test Proposal', response.data)
+
+    def test_displays_pending_proposal_on_supervisor_home(self):
+        proposal = Proposal(
+            title="Pending Test Proposal",
+            description="Description",
+            student=self.student_user,
+            supervisor=self.supervisor_user,
+            accepted_date=None,
+            rejected_date=None
+        )
+        db.session.add(proposal)
+        db.session.commit()
+
+        self.app_context.push()
+        with self.flask_app.test_client() as client:
+            with client.session_transaction() as session:
+                session['_user_id'] = self.supervisor_user.id
+            response = client.get('/')
+            self.assertEqual(response.status_code, 200)
+            self.assertIn(b'Pending Test Proposal', response.data)
+            self.assertIn(b'Accept', response.data)
+            self.assertIn(b'Reject', response.data)
 
 if __name__ == '__main__':
     unittest.main()
