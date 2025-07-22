@@ -196,7 +196,7 @@ class ProjectManipulation(unittest.TestCase):
 
     def test_handles_submission_error_gracefully(self):
         self.assertIsNone(self.project.submitted_datetime)
-        with unittest.mock.patch('models.db.db.session.commit', side_effect=Exception('Database error')):
+        with unittest.mock.patch.object(db.session, "commit", side_effect=Exception('Database error')):
             self.app_context.push()
             with self.flask_app.test_client() as client:
                 with client.session_transaction() as session:
