@@ -6,6 +6,7 @@ import unittest.mock
 from datetime import datetime
 
 import sqlalchemy
+from flask import url_for
 
 from exceptions import InvalidStudent, InvalidSupervisor, MaxProposalsReachedError
 
@@ -23,7 +24,8 @@ class ProposalCreation(unittest.TestCase):
         test_config = {
             'SQLALCHEMY_DATABASE_URI': f'sqlite:///{self.db_path}',
             'TESTING': True,
-            'SECRET_KEY': 'test'
+            'SECRET_KEY': 'test',
+            'SERVER_NAME': 'localhost'
         }
         self.flask_app = create_app(test_config)
         self.app = self.flask_app.test_client()
@@ -118,7 +120,7 @@ class ProposalCreation(unittest.TestCase):
         with self.flask_app.test_client() as client:
             with client.session_transaction() as session:
                 session['_user_id'] = self.student_user.id
-            response = client.post('/submit_proposal', data={
+            response = client.post(url_for('proposal.submit_proposal'), data={
                 'title': 'Test Proposal',
                 'description': 'Test Description',
                 'supervisor_id': self.supervisor_user.id
@@ -131,7 +133,7 @@ class ProposalCreation(unittest.TestCase):
         with self.flask_app.test_client() as client:
             with client.session_transaction() as session:
                 session['_user_id'] = self.supervisor_user.id
-            response = client.post('/submit_proposal', data={
+            response = client.post(url_for('proposal.submit_proposal'), data={
                 'title': 'Test Proposal',
                 'description': 'Test Description',
                 'supervisor_id': 1
@@ -144,7 +146,7 @@ class ProposalCreation(unittest.TestCase):
         with self.flask_app.test_client() as client:
             with client.session_transaction() as session:
                 session['_user_id'] = str(self.student_user.id)
-            response = client.post('/submit_proposal', data={
+            response = client.post(url_for('proposal.submit_proposal'), data={
                 'title': 'Test Proposal',
                 'description': 'Test Description'
             }, follow_redirects=True)
@@ -156,7 +158,7 @@ class ProposalCreation(unittest.TestCase):
         with self.flask_app.test_client() as client:
             with client.session_transaction() as session:
                 session['_user_id'] = str(self.student_user.id)
-            response = client.post('/submit_proposal', data={
+            response = client.post(url_for('proposal.submit_proposal'), data={
                 'title': 'Test Proposal',
                 'description': 'Test Description',
                 'catalog_id': 9999
@@ -211,7 +213,7 @@ class ProposalCreation(unittest.TestCase):
         with self.flask_app.test_client() as client:
             with client.session_transaction() as session:
                 session['_user_id'] = self.supervisor_user.id
-            response = client.post(f'/proposal_action/{proposal.id}', data={'action': 'accept'}, follow_redirects=True)
+            response = client.post(url_for('proposal.proposal_action', proposal_id=proposal.id), data={'action': 'accept'}, follow_redirects=True)
             self.assertEqual(response.status_code, 200)
             self.assertIn(b'Proposal accepted and project created.', response.data)
             self.assertIsNotNone(proposal.accepted_date)
@@ -233,7 +235,7 @@ class ProposalCreation(unittest.TestCase):
         with self.flask_app.test_client() as client:
             with client.session_transaction() as session:
                 session['_user_id'] = self.supervisor_user.id
-            response = client.post(f'/proposal_action/{proposal.id}', data={'action': 'reject'}, follow_redirects=True)
+            response = client.post(url_for('proposal.proposal_action', proposal_id=proposal.id), data={'action': 'reject'}, follow_redirects=True)
             self.assertEqual(response.status_code, 200)
             self.assertIn(b'Proposal rejected.', response.data)
             self.assertIsNotNone(proposal.rejected_date)
@@ -254,7 +256,7 @@ class ProposalCreation(unittest.TestCase):
         with self.flask_app.test_client() as client:
             with client.session_transaction() as session:
                 session['_user_id'] = self.student_user.id
-            response = client.post(f'/proposal_action/{proposal.id}', data={'action': 'accept'}, follow_redirects=True)
+            response = client.post(url_for('proposal.proposal_action', proposal_id=proposal.id), data={'action': 'accept'}, follow_redirects=True)
             self.assertEqual(response.status_code, 403)
 
     def test_proposal_action_prevents_processing_already_processed_proposal(self):
@@ -273,7 +275,7 @@ class ProposalCreation(unittest.TestCase):
         with self.flask_app.test_client() as client:
             with client.session_transaction() as session:
                 session['_user_id'] = self.supervisor_user.id
-            response = client.post(f'/proposal_action/{proposal.id}', data={'action': 'reject'}, follow_redirects=True)
+            response = client.post(url_for('proposal.proposal_action', proposal_id=proposal.id), data={'action': 'reject'}, follow_redirects=True)
             self.assertEqual(response.status_code, 200)
             self.assertIn(b'Proposal already processed.', response.data)
 
@@ -293,7 +295,7 @@ class ProposalCreation(unittest.TestCase):
         with self.flask_app.test_client() as client:
             with client.session_transaction() as session:
                 session['_user_id'] = self.supervisor_user.id
-            response = client.post(f'/proposal_action/{proposal.id}', data={'action': 'invalid_action'},
+            response = client.post(url_for('proposal.proposal_action', proposal_id=proposal.id), data={'action': 'invalid_action'},
                                    follow_redirects=True)
             self.assertEqual(response.status_code, 200)
             self.assertIn(b'Invalid action.', response.data)
@@ -314,7 +316,7 @@ class ProposalCreation(unittest.TestCase):
         with self.flask_app.test_client() as client:
             with client.session_transaction() as session:
                 session['_user_id'] = self.student_user.id
-            response = client.post(f'/withdraw_proposal/{proposal.id}', follow_redirects=True)
+            response = client.post(url_for('proposal.withdraw_proposal', proposal_id=proposal.id), follow_redirects=True)
             self.assertEqual(response.status_code, 200)
             self.assertIn(b'Proposal withdrawn successfully.', response.data)
             self.assertIsNone(Proposal.query.get(proposal.id))
@@ -335,7 +337,7 @@ class ProposalCreation(unittest.TestCase):
         with self.flask_app.test_client() as client:
             with client.session_transaction() as session:
                 session['_user_id'] = self.supervisor_user.id
-            response = client.post(f'/withdraw_proposal/{proposal.id}', follow_redirects=True)
+            response = client.post(url_for('proposal.withdraw_proposal', proposal_id=proposal.id), follow_redirects=True)
             self.assertEqual(response.status_code, 403)
 
     def test_prevents_withdrawing_non_pending_proposal(self):
@@ -354,7 +356,7 @@ class ProposalCreation(unittest.TestCase):
         with self.flask_app.test_client() as client:
             with client.session_transaction() as session:
                 session['_user_id'] = self.student_user.id
-            response = client.post(f'/withdraw_proposal/{proposal.id}', follow_redirects=True)
+            response = client.post(url_for('proposal.withdraw_proposal', proposal_id=proposal.id), follow_redirects=True)
             self.assertEqual(response.status_code, 200)
             self.assertIn(b'Only pending proposals can be withdrawn.', response.data)
             self.assertIsNotNone(Proposal.query.get(proposal.id))
@@ -376,7 +378,7 @@ class ProposalCreation(unittest.TestCase):
             with client.session_transaction() as session:
                 session['_user_id'] = self.student_user.id
             with unittest.mock.patch.object(db.session, 'delete', side_effect=Exception("Database error")):
-                response = client.post(f'/withdraw_proposal/{proposal.id}', follow_redirects=True)
+                response = client.post(url_for('proposal.withdraw_proposal', proposal_id=proposal.id), follow_redirects=True)
                 self.assertEqual(response.status_code, 200)
                 self.assertIn(b'Error withdrawing proposal: Database error', response.data)
                 self.assertIsNotNone(Proposal.query.get(proposal.id))
@@ -450,7 +452,7 @@ class ProposalCreation(unittest.TestCase):
             with client.session_transaction() as session:
                 session['_user_id'] = self.student_user.id
             with unittest.mock.patch.object(db.session, 'commit', side_effect=Exception("Database error")):
-                response = client.post('/submit_proposal', data={
+                response = client.post(url_for('proposal.submit_proposal'), data={
                     'title': 'Test Proposal',
                     'description': 'Test Description',
                     'supervisor_id': self.supervisor_user.id
@@ -463,7 +465,7 @@ class ProposalCreation(unittest.TestCase):
         with self.flask_app.test_client() as client:
             with client.session_transaction() as session:
                 session['_user_id'] = self.supervisor_user.id
-            response = client.post('/submit_proposal', data={
+            response = client.post(url_for('proposal.submit_proposal'), data={
                 'title': 'Test Proposal',
                 'description': 'Test Description',
                 'supervisor_id': self.supervisor_user.id
@@ -476,7 +478,7 @@ class ProposalCreation(unittest.TestCase):
         with self.flask_app.test_client() as client:
             with client.session_transaction() as session:
                 session['_user_id'] = self.student_user.id
-            response = client.post('/submit_proposal', data={
+            response = client.post(url_for('proposal.submit_proposal'), data={
                 'title': 'Test Proposal',
                 'description': 'Test Description',
                 'supervisor_id': 9999
@@ -508,7 +510,7 @@ class ProposalCreation(unittest.TestCase):
         with self.flask_app.test_client() as client:
             with client.session_transaction() as session:
                 session['_user_id'] = self.student_user.id
-            response = client.post('/submit_proposal', data={
+            response = client.post(url_for("proposal.submit_proposal"), data={
                 'catalog_id': catalog_proposal.id
             }, follow_redirects=True)
             self.assertEqual(response.status_code, 200)
@@ -522,7 +524,7 @@ class ProposalCreation(unittest.TestCase):
         with self.flask_app.test_client() as client:
             with client.session_transaction() as session:
                 session['_user_id'] = self.student_user.id
-            response = client.post('/submit_proposal', data={
+            response = client.post(url_for("proposal.submit_proposal"), data={
                 'title': '',
                 'description': '',
                 'supervisor_id': self.supervisor_user.id
@@ -535,7 +537,7 @@ class ProposalCreation(unittest.TestCase):
         with self.flask_app.test_client() as client:
             with client.session_transaction() as session:
                 session['_user_id'] = self.student_user.id
-            response = client.post('/submit_proposal', data={
+            response = client.post(url_for("proposal.submit_proposal"), data={
                 'catalog_id': 'invalid'
             }, follow_redirects=True)
             self.assertEqual(response.status_code, 404)
@@ -545,7 +547,7 @@ class ProposalCreation(unittest.TestCase):
         with self.flask_app.test_client() as client:
             with client.session_transaction() as session:
                 session['_user_id'] = self.student_user.id
-            response = client.post('/submit_proposal', data={
+            response = client.post(url_for("proposal.submit_proposal"), data={
                 'title': 'Test Proposal',
                 'description': 'Test Description',
                 'supervisor_id': self.inactive_supervisor_user.id
@@ -584,7 +586,7 @@ class ProposalCreation(unittest.TestCase):
         with self.flask_app.test_client() as client:
             with client.session_transaction() as session:
                 session['_user_id'] = self.student_user.id
-            response = client.get('/')
+            response = client.get(url_for('user.home'))
             self.assertEqual(response.status_code, 200)
             self.assertIn(b'Pending Test Proposal', response.data)
 
@@ -604,7 +606,7 @@ class ProposalCreation(unittest.TestCase):
         with self.flask_app.test_client() as client:
             with client.session_transaction() as session:
                 session['_user_id'] = self.supervisor_user.id
-            response = client.get('/')
+            response = client.get(url_for('user.home'))
             self.assertEqual(response.status_code, 200)
             self.assertIn(b'Pending Test Proposal', response.data)
             self.assertIn(b'Accept', response.data)

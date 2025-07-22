@@ -7,6 +7,7 @@ import unittest.mock
 from datetime import datetime
 
 import sqlalchemy
+from flask import url_for
 
 from exceptions import InvalidStudent, InvalidSupervisor, MaxProposalsReachedError
 
@@ -25,7 +26,8 @@ class ProjectManipulation(unittest.TestCase):
         test_config = {
             'SQLALCHEMY_DATABASE_URI': f'sqlite:///{self.db_path}',
             'TESTING': True,
-            'SECRET_KEY': 'test'
+            'SECRET_KEY': 'test',
+            'SERVER_NAME': 'localhost'
         }
         self.flask_app = create_app(test_config)
         self.app = self.flask_app.test_client()
@@ -128,7 +130,7 @@ class ProjectManipulation(unittest.TestCase):
         with self.flask_app.test_client() as client:
             with client.session_transaction() as session:
                 session['_user_id'] = self.admin_user.id
-            response = client.post(f'/project/{self.project.id}/add_marker', data={
+            response = client.post(url_for('project.add_marker', project_id=self.project.id), data={
                 'add_marker_id': self.inactive_supervisor_user.id
             }, follow_redirects=True)
             self.assertEqual(response.status_code, 200)
@@ -140,7 +142,7 @@ class ProjectManipulation(unittest.TestCase):
         with self.flask_app.test_client() as client:
             with client.session_transaction() as session:
                 session['_user_id'] = self.student_user.id
-            response = client.post(f'/project/{self.project.id}/add_marker', data={
+            response = client.post(url_for('project.add_marker', project_id=self.project.id), data={
                 'add_marker_id': self.inactive_supervisor_user.id
             }, follow_redirects=True)
             self.assertEqual(response.status_code, 200)
@@ -152,7 +154,7 @@ class ProjectManipulation(unittest.TestCase):
         with self.flask_app.test_client() as client:
             with client.session_transaction() as session:
                 session['_user_id'] = self.admin_user.id
-            response = client.post(f'/project/{self.project.id}/add_marker', data={
+            response = client.post(url_for('project.add_marker', project_id=self.project.id), data={
                 'add_marker_id': self.supervisor_user.id
             }, follow_redirects=True)
             self.assertEqual(response.status_code, 200)
@@ -164,7 +166,7 @@ class ProjectManipulation(unittest.TestCase):
         with self.flask_app.test_client() as client:
             with client.session_transaction() as session:
                 session['_user_id'] = self.admin_user.id
-            response = client.post(f'/project/{self.project.id}/add_marker', data={}, follow_redirects=True)
+            response = client.post(url_for('project.add_marker', project_id=self.project.id), data={}, follow_redirects=True)
             self.assertEqual(response.status_code, 200)
             self.assertIn(b'No second marker selected.', response.data)
             self.assertIsNone(self.project.second_marker_id)
@@ -175,7 +177,7 @@ class ProjectManipulation(unittest.TestCase):
         with self.flask_app.test_client() as client:
             with client.session_transaction() as session:
                 session['_user_id'] = self.student_user.id
-            response = client.post(f'/project/{self.project.id}/submit', follow_redirects=True)
+            response = client.post(url_for('project.submit_project', project_id=self.project.id), follow_redirects=True)
             self.assertEqual(response.status_code, 200)
             self.assertIn(b'Project marked as submitted.', response.data)
             self.assertIsNotNone(self.project.submitted_datetime)
@@ -188,11 +190,10 @@ class ProjectManipulation(unittest.TestCase):
         with self.flask_app.test_client() as client:
             with client.session_transaction() as session:
                 session['_user_id'] = self.supervisor_user.id
-            response = client.post(f'/project/{self.project.id}/submit', follow_redirects=True)
+            response = client.post(url_for('project.submit_project', project_id=self.project.id), follow_redirects=True)
             self.assertEqual(response.status_code, 200)
             self.assertIn(b'Only the student can submit the project.', response.data)
             self.assertIsNone(self.project.submitted_datetime)
-
 
     def test_handles_submission_error_gracefully(self):
         self.assertIsNone(self.project.submitted_datetime)
@@ -201,7 +202,7 @@ class ProjectManipulation(unittest.TestCase):
             with self.flask_app.test_client() as client:
                 with client.session_transaction() as session:
                     session['_user_id'] = self.student_user.id
-                response = client.post(f'/project/{self.project.id}/submit', follow_redirects=True)
+                response = client.post(url_for('project.submit_project', project_id=self.project.id), follow_redirects=True)
                 self.assertEqual(response.status_code, 200)
                 self.assertIn(b'Error submitting project: Database error', response.data)
                 self.assertIsNone(self.project.submitted_datetime)
@@ -212,7 +213,7 @@ class ProjectManipulation(unittest.TestCase):
         with self.flask_app.test_client() as client:
             with client.session_transaction() as session:
                 session['_user_id'] = self.supervisor_user.id
-            response = client.post(f'/mark/{mark.id}/submit', data={
+            response = client.post(url_for('project.submit_mark', mark_id=mark.id), data={
                 'grade': 85,
                 'feedback': 'Good work'
             }, follow_redirects=True)
@@ -234,7 +235,7 @@ class ProjectManipulation(unittest.TestCase):
         with self.flask_app.test_client() as client:
             with client.session_transaction() as session:
                 session['_user_id'] = self.student_user.id
-            response = client.post(f'/mark/{mark.id}/submit', data={
+            response = client.post(url_for('project.submit_mark', mark_id=mark.id), data={
                 'grade': 85,
                 'feedback': 'Good work'
             }, follow_redirects=True)
@@ -255,7 +256,7 @@ class ProjectManipulation(unittest.TestCase):
         with self.flask_app.test_client() as client:
             with client.session_transaction() as session:
                 session['_user_id'] = self.supervisor_user.id
-            response = client.post(f'/mark/{mark.id}/submit', data={
+            response = client.post(url_for('project.submit_mark', mark_id=mark.id), data={
                 'grade': 85,
                 'feedback': 'Good work'
             }, follow_redirects=True)
@@ -279,7 +280,7 @@ class ProjectManipulation(unittest.TestCase):
         with self.flask_app.test_client() as client:
             with client.session_transaction() as session:
                 session['_user_id'] = self.supervisor_user.id
-            response = client.post(f'/mark/{mark.id}/submit', data={
+            response = client.post(url_for('project.submit_mark', mark_id=mark.id), data={
                 'grade': 90,
                 'feedback': 'Updated feedback'
             }, follow_redirects=True)
@@ -311,7 +312,7 @@ class ProjectManipulation(unittest.TestCase):
         with self.flask_app.test_client() as client:
             with client.session_transaction() as session:
                 session['_user_id'] = self.supervisor_user.id
-            response = client.post(f'/mark/{mark1.id}/submit', data={
+            response = client.post(url_for('project.submit_mark', mark_id=mark1.id), data={
                 'grade': 85,
                 'feedback': 'Good work'
             }, follow_redirects=True)
@@ -344,7 +345,7 @@ class ProjectManipulation(unittest.TestCase):
         with self.flask_app.test_client() as client:
             with client.session_transaction() as session:
                 session['_user_id'] = self.inactive_supervisor_user.id
-            response = client.post(f'/mark/{second_mark.id}/submit', data={
+            response = client.post(url_for('project.submit_mark', mark_id=second_mark.id), data={
                 'grade': 84,
                 'feedback': 'Concordant mark'
             }, follow_redirects=True)
@@ -380,7 +381,7 @@ class ProjectManipulation(unittest.TestCase):
         with self.flask_app.test_client() as client:
             with client.session_transaction() as session:
                 session['_user_id'] = self.inactive_supervisor_user.id
-            response = client.post(f'/mark/{second_mark.id}/submit', data={
+            response = client.post(url_for('project.submit_mark', mark_id=second_mark.id), data={
                 'grade': 70,
                 'feedback': 'Non-concordant mark'
             }, follow_redirects=True)
