@@ -29,8 +29,8 @@ def view_project(project_id):
             'second_marker' if current_user.id == project.second_marker_id else (
                 'admin' if current_user.is_admin else 'other')))
     can_create_meeting = user_role == 'supervisor'
-    can_mark = user_role in ['supervisor', 'second_marker'] # TODO: and project.status == 'submitted'
-    can_submit = user_role == 'student' # TODO: and project.status == 'active'
+    can_mark = user_role in ['supervisor', 'second_marker'] and project.status in [ProjectStatus.SUBMITTED, ProjectStatus.MARKING]
+    can_submit = user_role == 'student' and project.status == ProjectStatus.ACTIVE
     supervisors = User.query.filter_by(is_supervisor=True, active=True).all()
     return render_template('project.html', project=project, meetings=meetings, marks=marks, user_role=user_role, can_create_meeting=can_create_meeting, can_mark=can_mark, can_submit=can_submit, final_mark_is_ready=final_mark_is_ready, supervisors=supervisors)
 

@@ -76,7 +76,7 @@ class Project(db.Model):
 
         for i in range(0, len(marks_sorted), 2):
             m1, m2 = marks_sorted[i], marks_sorted[i+1]
-            if not (m1.mark and m2.mark):
+            if not (m1.mark and m2.mark and m1.finalised and m2.finalised):
                 continue
             if abs(m1.mark - m2.mark) <= 5:
                 return (m1.mark + m2.mark) / 2
