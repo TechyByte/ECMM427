@@ -28,8 +28,10 @@ jobs:
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
           # exit-zero treats all errors as warnings.  The GitHub editor is 127 chars wide
           flake8 . --count --exit-zero --max-complexity=10 --statistics
-      - name: Test with pytest
+      - name: Test
         run: coverage run --source=. -m unittest discover -s tests -p "*.py"
+      - name: Run tests and generate JUnit XML
+        run: pytest --junitxml=results.xml
       - name: Upload test results to Codecov
         if: ${{ !cancelled() }}
         uses: codecov/test-results-action@v1
