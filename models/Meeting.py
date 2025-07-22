@@ -23,3 +23,7 @@ class Meeting(db.Model):
     @property
     def has_started(self):
         return self.meeting_start <= datetime.utcnow()
+
+    __table_args__ = (
+        db.CheckConstraint('meeting_end IS NULL OR meeting_end > meeting_start', name='check_meeting_end_after_start'),
+    )

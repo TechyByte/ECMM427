@@ -22,7 +22,7 @@ class ProjectMark(db.Model):
     marker = relationship('User', back_populates='marks_given')
 
     __table_args__ = (
-        CheckConstraint('mark >= 0 AND mark <= 100', name='check_grade_bounds'),
+        CheckConstraint('mark is NULL OR (mark >= 0 AND mark <= 100)', name='check_grade_bounds'),
     )
 
     @validates('finalised')

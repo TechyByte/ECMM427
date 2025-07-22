@@ -89,3 +89,9 @@ class Project(db.Model):
         except NoConcordantProjectMarks:
             return None
 
+    __table_args__ = (
+        db.CheckConstraint('second_marker_id IS NULL OR second_marker_id != supervisor_id',
+                           name='check_second_marker_not_supervisor'),
+        db.CheckConstraint('second_marker_id IS NULL OR second_marker_id != student_id',
+                           name='check_second_marker_not_student'),
+    )
