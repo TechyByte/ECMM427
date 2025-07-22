@@ -1,4 +1,3 @@
-import unittest
 import os
 import sqlite3
 import tempfile
