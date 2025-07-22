@@ -32,7 +32,7 @@ jobs:
       - name: Test
         run: coverage run --source=. -m unittest discover -s tests -p "*.py"
       - name: Run tests and generate JUnit XML
-        run: pytest --junitxml=results.xml
+        run: PYTHONPATH=. pytest --junitxml=results.xml
       - name: Upload test results to Codecov
         if: ${{ !cancelled() }}
         uses: codecov/test-results-action@v1
