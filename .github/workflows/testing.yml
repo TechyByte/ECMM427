@@ -31,7 +31,7 @@ jobs:
           flake8 . --count --exit-zero --max-complexity=10 --statistics
       - name: Test with unittest
         run: coverage run --source=. -m unittest discover -s tests -p "*.py"
-      - name: Run tests and generate JUnit XML
+      - name: Run codecov-friendly pytests and generate JUnit XML
         run: PYTHONPATH=. pytest --junitxml=results.xml
       - name: Upload test results to Codecov
         if: ${{ !cancelled() }}
