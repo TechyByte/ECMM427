@@ -87,8 +87,13 @@ class User(db.Model):
                 raise ActiveUserError("Cannot deactivate user with unfinalised marks.")
         return value
 
+    @hybrid_property
     def is_student(self):
-        return not self.is_supervisor and not self.is_admin
+        return not (self.is_supervisor or self.is_admin)
+
+    @classmethod
+    def get_active_supervisors(cls):
+        return cls.query.filter_by(is_supervisor=True, active=True).all()
 
 
 class LoginUser(UserMixin):
