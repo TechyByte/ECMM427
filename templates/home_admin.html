@@ -3,14 +3,42 @@
 {% block content %}
 <h2>Module Leader Dashboard</h2>
 
-<h4>All Students</h4>
+<h4>Students</h4>
 <ul class="list-group mb-4">
   {% for student in students %}
     <li class="list-group-item d-flex justify-content-between align-items-center">
-      {{ student.name }} ({{ student.email }})
-        {%  for project in student.projects %}
-            <a href="{{ url_for("project.view_project", project_id=project.id) }}" class="btn btn-sm btn-outline-primary">View Project {{ project.id }}</a>
+      <span>
+        {{ student.name }} ({{ student.email }})
+        {% for project in student.projects %}
+            <a href="{{ url_for('project.view_project', project_id=project.id) }}" class="btn btn-sm btn-outline-primary">View Project {{ project.id }}</a>
         {% endfor %}
+      </span>
+      <form method="POST" action="{{ url_for('user.deactivate_user', user_id=student.id) }}" style="display:inline;">
+        <button type="submit" class="btn btn-link p-0" title="Deactivate User" onclick="return confirm('Are you sure you want to deactivate {{ student.name }}?');">
+          <i class="bi bi-trash" style="color: red; font-size: 1.2rem;"></i>
+        </button>
+      </form>
+    </li>
+  {% endfor %}
+</ul>
+
+<h4>Supervisors</h4>
+<ul class="list-group mb-4">
+  {% for supervisor in supervisors %}
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+      <span>
+        {{ supervisor.name }} ({{ supervisor.email }})
+        {% for project in supervisor.projects_supervised %}
+            <a href="{{ url_for('project.view_project', project_id=project.id) }}" class="btn btn-sm btn-outline-primary">View Project {{ project.id }}</a>
+        {% endfor %}
+      </span>
+        {% if supervisor.id != current_user.id %}
+          <form method="POST" action="{{ url_for('user.deactivate_user', user_id=supervisor.id) }}" style="display:inline;">
+            <button type="submit" class="btn btn-link p-0" title="Deactivate User" onclick="return confirm('Are you sure you want to deactivate {{ supervisor.name }}?');">
+              <i class="bi bi-trash" style="color: red; font-size: 1.2rem;"></i>
+            </button>
+          </form>
+        {% endif %}
     </li>
   {% endfor %}
 </ul>

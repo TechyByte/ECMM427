@@ -68,3 +68,19 @@ def create_user():
         flash(f"Error: {e}")
 
     return redirect(url_for("user.home"))
+
+@user_bp.route('/deactivate_user/<int:user_id>', methods=['POST'])
+@login_required
+def deactivate_user(user_id):
+    if not (current_user.is_authenticated and current_user.obj.is_admin):
+        flash('Only module leaders can deactivate users.', 'danger')
+        return redirect(url_for('user.home'))
+    user = User.query.get_or_404(user_id)
+    try:
+        user.active = False
+        db.session.commit()
+        flash('User deactivated successfully.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deactivating user: {e}', 'danger')
+    return redirect(url_for('user.home'))
