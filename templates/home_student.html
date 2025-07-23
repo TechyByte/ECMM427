@@ -54,4 +54,28 @@
   <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#proposalModal">Create Proposal</button>
 {% endif %}
 {% include 'modal_proposal.html' %}
+{#    rejected proposals section displays only if student has any rejected proposals   #}
+{% if rejected_proposals %}
+    <h4>Rejected Proposals</h4>
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Description</th>
+          <th>Supervisor</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for proposal in rejected_proposals %}
+          <tr>
+            <td>{{ proposal.title }}</td>
+            <td>{{ proposal.description }}</td>
+            <td>{{ proposal.supervisor.name if proposal.supervisor else 'Not Assigned' }}</td>
+            <td>{{ proposal.status }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+{% endif %}
 {% endblock %}
