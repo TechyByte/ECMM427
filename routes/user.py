@@ -27,12 +27,13 @@ def home():
         # Student view
         projects = Project.query.filter_by(student_id=user.id).all()
         pending_proposals = [p for p in Proposal.query.filter_by(student_id=user.id).all() if p.status == ProposalStatus.PENDING]
+        rejected_proposals = [p for p in Proposal.query.filter_by(student_id=user.id).all() if p.status == ProposalStatus.REJECTED]
         catalog = CatalogProposal.query.all()
         supervisors = User.query.filter_by(is_supervisor=True, active=True).all()
         has_project = len(projects) > 0
         return render_template("home_student.html", has_project=has_project,
                                projects=projects, pending_proposals=pending_proposals, catalog=catalog,
-                               supervisors=supervisors)
+                               rejected_proposals=rejected_proposals, supervisors=supervisors)
 
 
 
