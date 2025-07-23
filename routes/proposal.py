@@ -1,4 +1,4 @@
-from flask import Blueprint, redirect, url_for, request, flash, abort
+from flask import Blueprint, redirect, url_for, request, flash, abort, render_template
 from flask_login import login_required, current_user
 from datetime import datetime
 
@@ -104,3 +104,57 @@ def withdraw_proposal(proposal_id):
         db.session.rollback()
         flash(f'Error withdrawing proposal: {e}', 'danger')
     return redirect(url_for('user.home'))
+
+
+@proposal_bp.route('/catalog', methods=['GET'])
+@login_required
+def view_catalog():
+    catalog = CatalogProposal.query.join(User)\
+        .filter(User.is_supervisor == True, CatalogProposal.active == True, User.active == True).all()
+    return render_template("catalog.html", catalog=catalog, supervisors=User.get_active_supervisors())
+
+@proposal_bp.route('/create_catalog_proposal', methods=['POST'])
+@login_required
+def create_catalog_proposal():
+    user = current_user.obj
+    if not user.is_supervisor:
+        flash('Only supervisors can create catalog proposals.', 'danger')
+        return redirect(url_for('proposal.view_catalog'))
+    title = request.form.get('title')
+    description = request.form.get('description')
+    if not title or not description:
+        flash('Title and description are required.', 'danger')
+        return redirect(url_for('proposal.view_catalog'))
+    try:
+        catalog_proposal = CatalogProposal(
+            title=title,
+            description=description,
+            supervisor_id=user.id,
+            active=True
+        )
+        db.session.add(catalog_proposal)
+        db.session.commit()
+        flash('Catalog proposal created successfully.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error creating catalog proposal: {e}', 'danger')
+    return redirect(url_for('proposal.view_catalog'))
+
+@proposal_bp.route('/deactivate_catalog_proposal/<int:proposal_id>', methods=['POST'])
+@login_required
+def deactivate_catalog_proposal(proposal_id):
+    if not (current_user.obj.is_admin or current_user.obj.is_supervisor):
+        flash('Only admins and supervisors can deactivate catalog proposals.', 'danger')
+        return redirect(url_for('proposal.view_catalog'))
+    proposal = CatalogProposal.query.get_or_404(proposal_id)
+    if proposal.supervisor_id != current_user.obj.id and not current_user.obj.is_admin:
+        flash('You do not have permission to deactivate this catalog proposal.', 'danger')
+        return redirect(url_for('proposal.view_catalog'))
+    proposal.active = False
+    try:
+        db.session.commit()
+        flash('Catalog proposal deactivated.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deactivating catalog proposal: {e}', 'danger')
+    return redirect(url_for('proposal.view_catalog'))
