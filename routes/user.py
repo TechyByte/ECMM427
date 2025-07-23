@@ -13,8 +13,9 @@ def home():
 
     if user.is_admin:
         # Module leader view
-        students = User.query.filter_by(is_supervisor=False, is_admin=False).all()
-        return render_template("home_admin.html", students=students)
+        students = User.query.filter_by(is_supervisor=False, is_admin=False, active=True).all()
+        supervisors = User.query.filter_by(is_supervisor=True, active=True).all()
+        return render_template("home_admin.html", students=students, supervisors=supervisors)
 
     elif user.is_supervisor:
         # Supervisor view
