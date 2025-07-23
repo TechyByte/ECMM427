@@ -30,4 +30,5 @@ class ProjectMark(db.Model):
         # if finalised and no mark is set, then it is invalid
         if value and self.mark is None:
             return False
+        # leave NOT NULL constraint to handle this case
         return True

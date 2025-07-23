@@ -36,24 +36,6 @@ class Project(db.Model):
         return self.submitted_datetime is not None
 
     @hybrid_property
-    def is_finalised(self):
-        # Project is finalised if all pairs of marks are finalised and concordant, and there are no unpaired marks
-        marks = [m for m in self.marks if not m.is_reconciled]
-        if len(marks) == 0:
-            return False
-        if len(marks) % 2 != 0:
-            return False
-        # Check all pairs for concordancy (difference <= 5)
-        marks_sorted = sorted(marks, key=lambda m: m.id)
-        for i in range(0, len(marks_sorted), 2):
-            m1, m2 = marks_sorted[i], marks_sorted[i+1]
-            if not (m1.finalised and m2.finalised):
-                return False
-            if abs(m1.mark - m2.mark) > 5:
-                return False
-        return True
-
-    @hybrid_property
     def status(self):
         if self.is_submitted:
             try:

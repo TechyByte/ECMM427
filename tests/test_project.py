@@ -8,7 +8,7 @@ from datetime import datetime
 import sqlalchemy
 from flask import url_for
 
-from exceptions import InvalidStudent, InvalidSupervisor, MaxProposalsReachedError
+from exceptions import InvalidStudent, InvalidSupervisor, MaxProposalsReachedError, NoConcordantProjectMarks
 
 from models import User, Proposal, Project, CatalogProposal, ProjectMark
 from models.Proposal import ProposalStatus
@@ -394,6 +394,36 @@ class ProjectManipulation(unittest.TestCase):
                 project_id=self.submitted_project.id, finalised=False
             ).all()
             self.assertEqual(len(new_marks), 2)
+
+    def test_returns_final_mark_when_concordant_marks_exist(self):
+        mark1 = ProjectMark(project_id=self.project.id, marker_id=self.supervisor_user.id, mark=80, finalised=True)
+        mark2 = ProjectMark(project_id=self.project.id, marker_id=self.inactive_supervisor_user.id, mark=82,
+                            finalised=True)
+        db.session.add_all([mark1, mark2])
+        db.session.commit()
+        self.assertEqual(self.project.final_mark, 81)
+
+    def test_returns_none_when_no_finalised_marks_exist(self):
+        mark1 = ProjectMark(project_id=self.project.id, marker_id=self.supervisor_user.id, mark=80)
+        mark2 = ProjectMark(project_id=self.project.id, marker_id=self.inactive_supervisor_user.id, mark=82)
+        db.session.add_all([mark1, mark2])
+        db.session.commit()
+        self.assertIsNone(self.project.final_mark)
+
+    def test_returns_none_when_no_concordant_marks_exist(self):
+        mark1 = ProjectMark(project_id=self.project.id, marker_id=self.supervisor_user.id, mark=80, finalised=True)
+        mark2 = ProjectMark(project_id=self.project.id, marker_id=self.inactive_supervisor_user.id, mark=90,
+                            finalised=True)
+        db.session.add_all([mark1, mark2])
+        db.session.commit()
+        self.assertIsNone(self.project.final_mark)
+
+    def test_raises_exception_when_marks_are_not_in_pairs(self):
+        mark1 = ProjectMark(project_id=self.project.id, marker_id=self.supervisor_user.id, mark=80, finalised=True)
+        db.session.add(mark1)
+        db.session.commit()
+        with self.assertRaises(NoConcordantProjectMarks):
+            self.project.get_final_mark()
 
 
 if __name__ == '__main__':
