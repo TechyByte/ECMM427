@@ -109,12 +109,15 @@ class LoginUser(UserMixin):
     def name(self):
         return self._user.name
 
+    @property
     def is_supervisor(self):
         return self._user.is_supervisor
 
+    @property
     def is_admin(self):
         return self._user.is_admin
 
+    @property
     def is_student(self):
         return not self._user.is_supervisor and not self._user.is_admin
 
