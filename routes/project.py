@@ -78,7 +78,7 @@ def submit_mark(mark_id):
     if current_user.id not in [project.supervisor_id, project.second_marker_id]:
         flash('Not authorised.', 'danger')
         return redirect(url_for('project.view_project', project_id=project.id))
-    if project.status != ProjectStatus.SUBMITTED:
+    if project.status not in [ProjectStatus.SUBMITTED, ProjectStatus.MARKING]:
         flash('Project must be submitted before marking.', 'danger')
         return redirect(url_for('project.view_project', project_id=project.id))
     if mark.finalised:

@@ -10,7 +10,7 @@ from flask import url_for
 
 from exceptions import InvalidStudent, InvalidSupervisor, MaxProposalsReachedError, NoConcordantProjectMarks
 
-from models import User, Proposal, Project, CatalogProposal, ProjectMark
+from models import User, Proposal, Project, CatalogProposal, ProjectMark, Meeting
 from models.Proposal import ProposalStatus
 from models.Project import ProjectStatus
 
@@ -340,6 +340,7 @@ class ProjectManipulation(unittest.TestCase):
         supervisor_mark.mark = 80
         supervisor_mark.finalised = True
         db.session.commit()
+        self.assertTrue(self.submitted_project.is_submitted)
         # Second marker submits a concordant mark (within 5)
         with self.flask_app.test_client() as client:
             with client.session_transaction() as session:
@@ -424,6 +425,125 @@ class ProjectManipulation(unittest.TestCase):
         db.session.commit()
         with self.assertRaises(NoConcordantProjectMarks):
             self.project.get_final_mark()
+
+    def test_returns_marking_status_when_at_least_one_mark_is_finalised(self):
+        mark1 = ProjectMark(project_id=self.project.id, marker_id=self.supervisor_user.id, mark=80, finalised=True)
+        mark2 = ProjectMark(project_id=self.project.id, marker_id=self.inactive_supervisor_user.id, mark=85)
+        self.project.submitted_datetime = datetime.utcnow()
+        db.session.add_all([mark1, mark2])
+        db.session.commit()
+        self.assertEqual(self.project.status, ProjectStatus.MARKING)
+        # self.project.submitted_datetime = None
+        # db.session.commit()
+
+    def test_does_not_return_marking_status_when_no_marks_are_finalised(self):
+        mark1 = ProjectMark(project_id=self.project.id, marker_id=self.supervisor_user.id, mark=80)
+        mark2 = ProjectMark(project_id=self.project.id, marker_id=self.inactive_supervisor_user.id, mark=85)
+        db.session.add_all([mark1, mark2])
+        db.session.commit()
+        self.assertNotEqual(self.project.status, ProjectStatus.MARKING)
+
+    def test_allows_supervisor_to_edit_meeting_details(self):
+        meeting = Meeting(
+            project_id=self.project.id,
+            meeting_start=datetime.utcnow(),
+            meeting_end=datetime.utcnow(),
+            location="Room 101"
+        )
+        db.session.add(meeting)
+        db.session.commit()
+        self.app_context.push()
+        with self.flask_app.test_client() as client:
+            with client.session_transaction() as session:
+                session['_user_id'] = self.supervisor_user.id
+            response = client.post(url_for('project.edit_meeting', meeting_id=meeting.id), data={
+                'attendance': 1,
+                'outcome_notes': 'Discussed project progress'
+            }, follow_redirects=True)
+            self.assertEqual(response.status_code, 200)
+            self.assertIn(b'Meeting updated.', response.data)
+            db.session.refresh(meeting)
+            self.assertTrue(meeting.attendance)
+            self.assertEqual(meeting.outcome_notes, 'Discussed project progress')
+
+    def test_prevents_student_from_editing_meeting_details(self):
+        meeting = Meeting(
+            project_id=self.project.id,
+            meeting_start=datetime.utcnow(),
+            meeting_end=datetime.utcnow(),
+            location="Room 101"
+        )
+        db.session.add(meeting)
+        db.session.commit()
+        self.app_context.push()
+        with self.flask_app.test_client() as client:
+            with client.session_transaction() as session:
+                session['_user_id'] = self.student_user.id
+            response = client.post(url_for('project.edit_meeting', meeting_id=meeting.id), data={
+                'attendance': 1,
+                'outcome_notes': 'Attempted edit'
+            }, follow_redirects=True)
+            self.assertEqual(response.status_code, 200)
+            self.assertIn(b'Not authorized.', response.data)
+            db.session.refresh(meeting)
+            self.assertFalse(meeting.attendance)
+            self.assertIsNone(meeting.outcome_notes)
+
+    def test_prevents_editing_meeting_by_unauthorized_supervisor(self):
+        other_supervisor = User(
+            email="other_supervisor@example.com",
+            name="Other Supervisor",
+            is_supervisor=True,
+            is_admin=False,
+            active=True
+        )
+        other_supervisor.set_password("password")
+        db.session.add(other_supervisor)
+        db.session.commit()
+        meeting = Meeting(
+            project_id=self.project.id,
+            meeting_start=datetime.utcnow(),
+            meeting_end=datetime.utcnow(),
+            location="Room 101"
+        )
+        db.session.add(meeting)
+        db.session.commit()
+        self.app_context.push()
+        with self.flask_app.test_client() as client:
+            with client.session_transaction() as session:
+                session['_user_id'] = other_supervisor.id
+            response = client.post(url_for('project.edit_meeting', meeting_id=meeting.id), data={
+                'attendance': 1,
+                'outcome_notes': 'Unauthorized edit'
+            }, follow_redirects=True)
+            self.assertEqual(response.status_code, 200)
+            self.assertIn(b'Not authorized.', response.data)
+            db.session.refresh(meeting)
+            self.assertFalse(meeting.attendance)
+            self.assertIsNone(meeting.outcome_notes)
+
+    def test_allows_admin_to_edit_meeting_details(self):
+        meeting = Meeting(
+            project_id=self.project.id,
+            meeting_start=datetime.utcnow(),
+            meeting_end=datetime.utcnow(),
+            location="Room 101"
+        )
+        db.session.add(meeting)
+        db.session.commit()
+        self.app_context.push()
+        with self.flask_app.test_client() as client:
+            with client.session_transaction() as session:
+                session['_user_id'] = self.admin_user.id
+            response = client.post(url_for('project.edit_meeting', meeting_id=meeting.id), data={
+                'attendance': 1,
+                'outcome_notes': 'Admin updated meeting'
+            }, follow_redirects=True)
+            self.assertEqual(response.status_code, 200)
+            self.assertIn(b'Meeting updated.', response.data)
+            db.session.refresh(meeting)
+            self.assertTrue(meeting.attendance)
+            self.assertEqual(meeting.outcome_notes, 'Admin updated meeting')
 
 
 if __name__ == '__main__':

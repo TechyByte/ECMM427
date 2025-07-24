@@ -37,15 +37,17 @@ class Project(db.Model):
 
     @hybrid_property
     def status(self):
+        final_mark = None
         if self.is_submitted:
             try:
                final_mark = self.get_final_mark()
             except NoConcordantProjectMarks:
-                return ProjectStatus.SUBMITTED
+                if any(m.finalised for m in self.marks):
+                    return ProjectStatus.MARKING
             if final_mark is not None:
                 return ProjectStatus.MARKS_CONFIRMED
             else:
-                return ProjectStatus.MARKING
+                return ProjectStatus.SUBMITTED
         return ProjectStatus.ACTIVE
 
     def get_final_mark(self):
