@@ -728,3 +728,77 @@ class CatalogProposalManagement(unittest.TestCase):
         response = client.get(url_for('proposal.view_catalog'))
         self.assertNotIn(b'Deactivate Proposal', response.data)
 
+    def test_creates_catalog_proposal_successfully_for_supervisor(self):
+        client = self.login(self.supervisor_user)
+        response = client.post(url_for('proposal.create_catalog_proposal'), data={
+            'title': 'New Catalog Proposal',
+            'description': 'Description of the proposal'
+        }, follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Catalog proposal created successfully.', response.data)
+        self.assertIsNotNone(CatalogProposal.query.filter_by(title='New Catalog Proposal').first())
+
+    def test_prevents_catalog_proposal_creation_by_non_supervisor(self):
+        client = self.login(self.student_user)
+        response = client.post(url_for('proposal.create_catalog_proposal'), data={
+            'title': 'Invalid Proposal',
+            'description': 'Should not be created'
+        }, follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Only supervisors can create catalog proposals.', response.data)
+        self.assertIsNone(CatalogProposal.query.filter_by(title='Invalid Proposal').first())
+
+    def test_prevents_catalog_proposal_creation_with_missing_title_or_description(self):
+        client = self.login(self.supervisor_user)
+        response = client.post(url_for('proposal.create_catalog_proposal'), data={
+            'title': '',
+            'description': ''
+        }, follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Title and description are required.', response.data)
+
+    def test_deactivates_catalog_proposal_successfully_by_supervisor(self):
+        catalog_proposal = CatalogProposal(
+            title="Active Proposal",
+            description="Description",
+            supervisor=self.supervisor_user,
+            active=True
+        )
+        db.session.add(catalog_proposal)
+        db.session.commit()
+        client = self.login(self.supervisor_user)
+        response = client.post(url_for('proposal.deactivate_catalog_proposal', proposal_id=catalog_proposal.id), follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Catalog proposal deactivated.', response.data)
+        self.assertFalse(CatalogProposal.query.get(catalog_proposal.id).active)
+
+    def test_prevents_deactivation_of_catalog_proposal_by_non_supervisor_or_admin(self):
+        catalog_proposal = CatalogProposal(
+            title="Active Proposal",
+            description="Description",
+            supervisor=self.supervisor_user,
+            active=True
+        )
+        db.session.add(catalog_proposal)
+        db.session.commit()
+        client = self.login(self.student_user)
+        response = client.post(url_for('proposal.deactivate_catalog_proposal', proposal_id=catalog_proposal.id), follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Only admins and supervisors can deactivate catalog proposals.', response.data)
+        self.assertTrue(CatalogProposal.query.get(catalog_proposal.id).active)
+
+    def test_prevents_deactivation_of_catalog_proposal_by_unauthorized_supervisor(self):
+        catalog_proposal = CatalogProposal(
+            title="Active Proposal",
+            description="Description",
+            supervisor=self.admin_supervisor_user,
+            active=True
+        )
+        db.session.add(catalog_proposal)
+        db.session.commit()
+        client = self.login(self.supervisor_user)
+        response = client.post(url_for('proposal.deactivate_catalog_proposal', proposal_id=catalog_proposal.id), follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'You do not have permission to deactivate this catalog proposal.', response.data)
+        self.assertTrue(CatalogProposal.query.get(catalog_proposal.id).active)
+
