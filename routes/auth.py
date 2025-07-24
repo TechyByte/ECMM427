@@ -10,9 +10,13 @@ def login():
     if request.method == "POST":
         user = User.query.filter_by(email=request.form["email"]).first()
         if user and user.check_password(request.form["password"]):
-            login_user(LoginUser(user))
-            return redirect(url_for("user.home"))
-        flash("Invalid credentials")
+            if user.active:
+                login_user(LoginUser(user))
+                return redirect(url_for("user.home"))
+            else:
+                flash("Your account is inactive. Please contact the administrator.", "warning")
+        else:
+            flash("Invalid credentials", "warning")
     return render_template("login.html")
 
 
