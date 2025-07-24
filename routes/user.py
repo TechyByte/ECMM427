@@ -54,7 +54,7 @@ def home():
 @login_required
 def create_user():
     if not (current_user.is_authenticated and current_user.is_admin):
-        flash("Only module leaders can create users.")
+        flash("Only module leaders can create users.", "error")
         return redirect(url_for("user.home"))
 
     name = request.form.get("name")
@@ -73,10 +73,10 @@ def create_user():
         )
         db.session.add(user)
         db.session.commit()
-        flash(f"{role.title()} created successfully.")
+        flash(f"{name} ({role}) created successfully.", "success")
     except Exception as e:
         db.session.rollback()
-        flash(f"Error: {e}")
+        flash(f"Error: {e}", "error")
 
     return redirect(url_for("user.home"))
 

@@ -11,7 +11,7 @@ proposal_bp = Blueprint('proposal', __name__)
 @login_required
 def submit_proposal():
     if current_user.is_authenticated and (current_user.obj.is_admin or current_user.obj.is_supervisor):
-        flash("Only students can submit proposals.")
+        flash("Only students can submit proposals.", "error")
         return redirect(url_for("user.home"))
 
     if not ((request.form.get("title") and request.form.get("description")) or request.form.get("catalog_id")):
@@ -44,7 +44,7 @@ def submit_proposal():
         )
         db.session.add(proposal)
         db.session.commit()
-        flash("Proposal submitted successfully.")
+        flash("Proposal submitted successfully.", "success")
     except Exception as e:
         db.session.rollback()
         flash(f"Error: {e}", "error")
@@ -59,7 +59,7 @@ def proposal_action(proposal_id):
         abort(403)
     action = request.form.get("action")
     if proposal.status != ProposalStatus.PENDING:
-        flash("Proposal already processed.")
+        flash("Proposal already processed.", "warning")
         return redirect(url_for("user.home"))
     if action == "accept":
         proposal.accepted_date = datetime.now()
@@ -74,12 +74,12 @@ def proposal_action(proposal_id):
         # Create ProjectMark for supervisor
         db.session.add(ProjectMark(project_id=project.id, marker_id=project.supervisor_id))
 
-        flash("Proposal accepted and project created.")
+        flash("Proposal accepted and project created.", "success")
     elif action == "reject":
         proposal.rejected_date = datetime.now()
-        flash("Proposal rejected.")
+        flash("Proposal rejected.", "success")
     else:
-        flash("Invalid action.")
+        flash("Invalid action.", "error")
         return redirect(url_for("user.home"))
     db.session.commit()
     return redirect(url_for("user.home"))

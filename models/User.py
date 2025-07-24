@@ -39,7 +39,7 @@ class User(db.Model):
             self.password_hash = generate_password_hash(password)
             return True
         except Exception as e:
-            flash(f"Error setting password: {e}")
+            flash(f"Error setting password: {e}", "error")
             return False
 
     def check_password(self, password: str) -> bool:
