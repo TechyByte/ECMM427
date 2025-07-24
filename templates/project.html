@@ -89,6 +89,13 @@
                 {% if can_mark and mark.marker_id == current_user.id and not mark.finalised %}
                 <button class="btn btn-sm btn{% if not project.is_submitted %}-outline{% endif %}-primary" data-bs-toggle="modal" data-bs-target="#markModal{{ mark.id }}" {% if not project.is_submitted %}disabled{% endif %}>Submit Mark</button>
                 {% endif %}
+                {% if project.second_marker_id and (not mark.finalised) and mark.marker_id != project.supervisor_id %}
+                  <form method="POST" action="{{ url_for('project.remove_second_marker', project_id=project.id) }}" style="display:inline;">
+                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Remove marker?');">
+                      Remove
+                    </button>
+                  </form>
+                {% endif %}
             </td>
         </tr>
         {# Mark Modal #}
@@ -102,7 +109,7 @@
 {% endif %}
 
 {# Add Second Marker Button for Admin if odd number of marks #}
-{% if project.marks|length % 2 != 0 and current_user.obj.is_admin %}
+{% if (project.second_marker_id == None or project.marks|length % 2 != 0) and current_user.is_admin %}
   <button class="btn btn-warning mt-3" data-bs-toggle="modal" data-bs-target="#addMarkerModal">Add Additional Marker</button>
   <!-- Add Second Marker Modal -->
   <div class="modal fade" id="addMarkerModal" tabindex="-1">

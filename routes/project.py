@@ -156,3 +156,18 @@ def add_marker(project_id):
     db.session.commit()
     flash('Second marker assigned successfully.', 'success')
     return redirect(url_for('project.view_project', project_id=project_id))
+
+
+@project_bp.route('/project/<int:project_id>/remove_second_marker', methods=['POST'])
+@login_required
+def remove_second_marker(project_id):
+    project = Project.query.get_or_404(project_id)
+    if not current_user.is_admin:
+        flash('Only admins can remove the second marker.', 'danger')
+        return redirect(url_for('project.view_project', project_id=project_id))
+    # Remove second marker and related marks
+    project.second_marker_id = None
+    ProjectMark.query.filter_by(project_id=project.id).filter(ProjectMark.marker_id != project.supervisor_id).delete()
+    db.session.commit()
+    flash('Second marker removed.', 'success')
+    return redirect(url_for('project.view_project', project_id=project_id))
