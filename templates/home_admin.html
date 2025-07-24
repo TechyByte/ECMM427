@@ -45,4 +45,8 @@
 
 <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createStudentModal">Add New Student</button>
 {% include "modal_create_user.html" %}
+    {% if current_user.is_supervisor %}
+    <hr>
+    {%  include "supervisor_dashboard.html" %}
+    {% endif %}
 {% endblock %}

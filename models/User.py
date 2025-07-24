@@ -91,6 +91,17 @@ class User(db.Model):
     def is_student(self):
         return not (self.is_supervisor or self.is_admin)
 
+    @hybrid_property
+    def user_type(self):
+        if self.is_admin and self.is_supervisor:
+            return "Admin Supervisor"
+        elif self.is_admin:
+            return "Admin"
+        elif self.is_supervisor:
+            return "Supervisor"
+        else:
+            return "Student"
+
     @classmethod
     def get_active_supervisors(cls):
         return cls.query.filter_by(is_supervisor=True, active=True).all()
@@ -120,6 +131,10 @@ class LoginUser(UserMixin):
     @property
     def is_student(self):
         return not self._user.is_supervisor and not self._user.is_admin
+
+    @property
+    def user_type(self):
+        return self._user.user_type
 
     @property
     def obj(self):

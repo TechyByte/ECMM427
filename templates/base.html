@@ -48,7 +48,7 @@
 
 
 		  <li class="nav-item">
-             <a class="nav-link" title="{{ current_user.email }} {{ "supervisor" if current_user.is_supervisor else "-" }}{{ "admin" if current_user.is_admin else "-" }}" href="{{ url_for('auth.logout') }}{{ "student" if not current_user.is_admin and not current_user.is_supervisor else "-" }}">Logout</a>
+             <a class="nav-link" title="{{ current_user.email }} -  {{ current_user.user_type }}">Logout</a>
 		  </li>
 		{% endif %}
 	  </ul>
