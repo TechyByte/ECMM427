@@ -19,10 +19,10 @@ def home():
 
     elif user.is_supervisor:
         # Supervisor view
-        proposals = Proposal.query.filter_by(supervisor_id=user.id).all()
+        pending_proposals = [p for p in Proposal.query.filter_by(supervisor_id=user.id).all() if p.status == ProposalStatus.PENDING]
         projects = Project.query.filter_by(supervisor_id=user.id).all()
         marking_projects = [pm.project for pm in ProjectMark.query.filter_by(marker_id=user.id).all() if pm.project.is_submitted]
-        return render_template("home_supervisor.html", proposals=proposals, projects=projects, marking_projects=marking_projects)
+        return render_template("home_supervisor.html", pending_proposals=pending_proposals, projects=projects, marking_projects=marking_projects)
 
     else:
         # Student view

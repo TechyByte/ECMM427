@@ -11,9 +11,9 @@ from exceptions import InvalidStudent, InvalidSupervisor, MaxProposalsReachedErr
 from enum import Enum
 
 class ProposalStatus(Enum):
-    PENDING = 'pending'
-    ACCEPTED = 'accepted'
-    REJECTED = 'rejected'
+    PENDING = 'Pending'
+    ACCEPTED = 'Accepted'
+    REJECTED = 'Rejected'
 
 class Proposal(db.Model):
     __tablename__ = 'proposal'
@@ -38,9 +38,9 @@ class Proposal(db.Model):
     @validates('student')
     def validate_student(self, key, user):
         if user.is_supervisor:
-            raise InvalidStudent("Received Supervisor")
+            raise InvalidStudent("Received Supervisor, Expected Student")
         if user.is_admin:
-            raise InvalidStudent("Received Admin")
+            raise InvalidStudent("Received Admin, Expected Student")
         return user
 
     @validates('supervisor')

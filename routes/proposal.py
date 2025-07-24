@@ -51,12 +51,11 @@ def submit_proposal():
 
     return redirect(url_for("user.home"))
 
-@proposal_bp.route("/proposal_action/<int:proposal_id>", methods=["POST"])
+@proposal_bp.route("/action/<int:proposal_id>", methods=["POST"])
 @login_required
 def proposal_action(proposal_id):
     proposal = Proposal.query.get_or_404(proposal_id)
-    user = current_user.obj
-    if not user.is_supervisor or proposal.supervisor_id != user.id:
+    if not (current_user.is_supervisor and proposal.supervisor_id == current_user.id):
         abort(403)
     action = request.form.get("action")
     if proposal.status != ProposalStatus.PENDING:
@@ -109,8 +108,7 @@ def withdraw_proposal(proposal_id):
 @proposal_bp.route('/catalog', methods=['GET'])
 @login_required
 def view_catalog():
-    catalog = CatalogProposal.query.join(User)\
-        .filter(User.is_supervisor == True, CatalogProposal.active == True, User.active == True).all()
+    catalog = CatalogProposal.query.join(User).filter(User.is_supervisor == True, CatalogProposal.active == True, User.active == True).all()
     return render_template("catalog.html", catalog=catalog, supervisors=User.get_active_supervisors())
 
 @proposal_bp.route('/create_catalog_proposal', methods=['POST'])

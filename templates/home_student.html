@@ -35,7 +35,7 @@
             <td>{{ proposal.title }}</td>
             <td>{{ proposal.description }}</td>
             <td>{{ proposal.supervisor.name if proposal.supervisor else 'Not Assigned' }}</td>
-            <td>{{ proposal.status }}</td>
+            <td>{{ proposal.status.value }}</td>
             <td>
               <form method="post" action="{{ url_for('proposal.withdraw_proposal', proposal_id=proposal.id) }}" style="display:inline;">
                 <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to withdraw this proposal?');">Withdraw</button>
@@ -63,7 +63,6 @@
           <th>Title</th>
           <th>Description</th>
           <th>Supervisor</th>
-          <th>Status</th>
         </tr>
       </thead>
       <tbody>
@@ -72,7 +71,6 @@
             <td>{{ proposal.title }}</td>
             <td>{{ proposal.description }}</td>
             <td>{{ proposal.supervisor.name if proposal.supervisor else 'Not Assigned' }}</td>
-            <td>{{ proposal.status }}</td>
           </tr>
         {% endfor %}
       </tbody>

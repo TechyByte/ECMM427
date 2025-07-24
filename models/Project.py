@@ -7,10 +7,10 @@ from models.db import db
 from enum import Enum
 
 class ProjectStatus(Enum):
-    ACTIVE = "active"
-    SUBMITTED = "submitted"
-    MARKING = "marked provisionally"
-    MARKS_CONFIRMED = "marks confirmed"
+    ACTIVE = "Active"
+    SUBMITTED = "Submitted"
+    MARKING = "Marking in Progress"
+    MARKS_CONFIRMED = "Marks Confirmed"
 
 class Project(db.Model):
     __tablename__ = 'project'
