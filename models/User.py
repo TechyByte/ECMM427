@@ -7,7 +7,7 @@ from sqlalchemy.orm import relationship, validates
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from models.Proposal import Proposal, ProposalStatus
-from models.Project import Project
+from models.Project import Project, ProjectStatus
 from models.ProjectMark import ProjectMark
 from exceptions import ActiveUserError
 from models.db import db
@@ -53,28 +53,21 @@ class User(db.Model):
 
     @hybrid_property
     def has_ongoing_project(self):
-        return Project.query.join(Proposal).filter(
-                and_(
-                    Proposal.status == ProposalStatus.ACCEPTED,
-                    ~Project.marks.any(), # No marks yet
-                    or_(
-                        Project.supervisor_id == self.id,
-                        Project.student_id == self.id
-                    )
-                )
-            ).first()
+        return [p for p in Project.query.join(Proposal).filter(
+                        or_(
+                            Project.supervisor_id == self.id,
+                            Project.student_id == self.id
+                        )
+                ) if p.status != ProjectStatus.MARKS_CONFIRMED]
 
     @hybrid_property
     def has_pending(self):
-        return Proposal.query.filter(
-                and_(
-                    Proposal.status == ProposalStatus.PENDING,
-                    or_(
+        return [p for p in Proposal.query.filter(
+                or_(
                         Proposal.supervisor_id == self.id,
                         Proposal.student_id == self.id
                     )
-                )
-            ).first()
+                ) if p.status == ProposalStatus.PENDING]
 
     @validates('active')
     def validate_active_status(self, key, value: bool):
