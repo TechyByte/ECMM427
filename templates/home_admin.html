@@ -10,7 +10,9 @@
       <span>
         {{ student.name }} ({{ student.email }})
         {% for project in student.projects %}
-            <a href="{{ url_for('project.view_project', project_id=project.id) }}" class="btn btn-sm btn-outline-primary">View Project</a>
+            {% if project.status.name != "ARCHIVED" %}
+                <a href="{{ url_for('project.view_project', project_id=project.id) }}" class="btn btn-sm btn-outline-primary">View Project</a>
+            {% endif %}
         {% endfor %}
       </span>
       <form method="POST" action="{{ url_for('user.deactivate_user', user_id=student.id) }}" style="display:inline;">
@@ -32,7 +34,9 @@
         <span class="badge bg-primary text-white">Module Leader</span>
       {% endif %}
         {% for project in supervisor.projects_supervised %}
-            <a href="{{ url_for('project.view_project', project_id=project.id) }}" class="btn btn-sm btn-outline-primary">{{ project.student.name }}</a>
+            {% if project.status.name != "ARCHIVED" %}
+                <a href="{{ url_for('project.view_project', project_id=project.id) }}" class="btn btn-sm btn-outline-primary">{{ project.student.name }}</a>
+            {% endif %}
         {% endfor %}
       </span>
     <div class="ms-auto d-flex gap-2">
