@@ -48,7 +48,7 @@
 
 
 		  <li class="nav-item">
-             <a class="nav-link" title="{{ current_user.email }} -  {{ current_user.user_type }}">Logout</a>
+             <a class="nav-link" href="{{ url_for("auth.logout") }}" title="{{ current_user.email }} -  {{ current_user.user_type }}">Logout</a>
 		  </li>
 		{% endif %}
 	  </ul>
