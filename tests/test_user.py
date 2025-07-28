@@ -213,7 +213,7 @@ class UserManipulation(unittest.TestCase):
 
     def test_handles_error_during_user_deactivation(self):
         client = self.login(self.admin_user)
-        with unittest.mock.patch("models.db.db.session.commit", side_effect=Exception("Database error")):
+        with unittest.mock.patch.object(db.session, "commit", side_effect=Exception("Database error")):
             response = client.post(url_for('user.deactivate_user', user_id=self.student_user.id), follow_redirects=True)
             self.assertEqual(response.status_code, 200)
             self.assertIn(b'Error deactivating user: Database error', response.data)
@@ -263,7 +263,7 @@ class UserManipulation(unittest.TestCase):
 
     def test_handles_error_during_admin_status_change(self):
         client = self.login(self.admin_user)
-        with unittest.mock.patch("models.db.db.session.commit", side_effect=Exception("Database error")):
+        with unittest.mock.patch.object(db.session, "commit", side_effect=Exception("Database error")):
             response = client.post(url_for('user.change_admin', user_id=self.student_user.id, admin='true'), follow_redirects=True)
             self.assertEqual(response.status_code, 200)
             self.assertIn(b'Error changing admin status: Database error', response.data)
