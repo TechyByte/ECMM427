@@ -17,7 +17,12 @@
           </div>
           <div class="mb-3">
             <label class="form-label">Temporary Password</label>
-            <input type="text" class="form-control" name="password" required>
+            <div class="input-group">
+              <input type="text" class="form-control" id="temporaryPassword" name="password" required>
+              <button class="btn btn-outline-secondary" type="button" id="copyPasswordBtn" title="Copy to clipboard">
+                Copy
+              </button>
+            </div>
           </div>
           <div class="mb-3">
             <label class="form-label">Role</label>
@@ -34,3 +39,26 @@
     </form>
   </div>
 </div>
+<script>
+  function generatePassword() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+    let password = '';
+    for (let i = 0; i < 12; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password;
+  }
+
+  window.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('temporaryPassword').value = generatePassword();
+
+    document.getElementById('copyPasswordBtn').addEventListener('click', function() {
+      const passwordInput = document.getElementById('temporaryPassword');
+      passwordInput.select();
+      passwordInput.setSelectionRange(0, 99999); // For mobile devices
+      document.execCommand('copy');
+      this.textContent = 'Copied!';
+      setTimeout(() => { this.textContent = 'Copy'; }, 1200);
+    });
+  });
+</script>
