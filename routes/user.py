@@ -122,3 +122,26 @@ def change_admin(user_id, admin):
         db.session.rollback()
         flash(f'Error changing admin status: {e}', 'danger')
     return redirect(url_for('user.home'))
+
+@user_bp.route("/change_password", methods=["POST"])
+@login_required
+def change_password():
+    user = current_user.obj
+    current_password = request.form.get("current_password")
+    new_password = request.form.get("new_password")
+    confirm_password = request.form.get("confirm_password")
+
+    if not user.check_password(current_password):
+        flash("Current password is incorrect.", "error")
+        return redirect(url_for("user.home"))
+    if new_password != confirm_password:
+        flash("New passwords do not match.", "error")
+        return redirect(url_for("user.home"))
+    if not new_password or len(new_password) < 6:
+        flash("New password must be at least 6 characters.", "error")
+        return redirect(url_for("user.home"))
+
+    user.set_password(new_password)
+    db.session.commit()
+    flash("Password changed successfully.", "success")
+    return redirect(url_for("user.home"))

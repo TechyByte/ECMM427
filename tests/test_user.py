@@ -269,3 +269,55 @@ class UserManipulation(unittest.TestCase):
             self.assertIn(b'Error changing admin status: Database error', response.data)
             db.session.refresh(self.student_user)
             self.assertFalse(self.student_user.is_admin)
+
+    def test_changes_password_successfully_with_valid_data(self):
+        client = self.login(self.student_user)
+        self.student_user.set_password("oldpassword")
+        db.session.commit()
+        response = client.post(url_for("user.change_password"), data={
+            "current_password": "oldpassword",
+            "new_password": "newpassword123",
+            "confirm_password": "newpassword123"
+        }, follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Password changed successfully.", response.data)
+        self.assertTrue(self.student_user.check_password("newpassword123"))
+
+    def test_prevents_password_change_with_incorrect_current_password(self):
+        client = self.login(self.student_user)
+        self.student_user.set_password("oldpassword")
+        db.session.commit()
+        response = client.post(url_for("user.change_password"), data={
+            "current_password": "wrongpassword",
+            "new_password": "newpassword123",
+            "confirm_password": "newpassword123"
+        }, follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Current password is incorrect.", response.data)
+        self.assertTrue(self.student_user.check_password("oldpassword"))
+
+    def test_prevents_password_change_when_new_passwords_do_not_match(self):
+        client = self.login(self.student_user)
+        self.student_user.set_password("oldpassword")
+        db.session.commit()
+        response = client.post(url_for("user.change_password"), data={
+            "current_password": "oldpassword",
+            "new_password": "newpassword123",
+            "confirm_password": "differentpassword"
+        }, follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"New passwords do not match.", response.data)
+        self.assertTrue(self.student_user.check_password("oldpassword"))
+
+    def test_prevents_password_change_when_new_password_is_too_short(self):
+        client = self.login(self.student_user)
+        self.student_user.set_password("oldpassword")
+        db.session.commit()
+        response = client.post(url_for("user.change_password"), data={
+            "current_password": "oldpassword",
+            "new_password": "short",
+            "confirm_password": "short"
+        }, follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"New password must be at least 6 characters.", response.data)
+        self.assertTrue(self.student_user.check_password("oldpassword"))

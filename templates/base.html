@@ -44,12 +44,12 @@
       </li>
         </ul>
 	  <ul class="navbar-nav ms-auto">
-
-
-
-		  <li class="nav-item">
-             <a class="nav-link" href="{{ url_for("auth.logout") }}" title="{{ current_user.email }} -  {{ current_user.user_type }}">Logout</a>
-		  </li>
+    <li class="nav-item">
+      <a class="nav-link" data-bs-toggle="modal" data-bs-target="#changePasswordModal" href="#">Change Password</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="{{ url_for('auth.logout') }}" title="{{ current_user.email }} -  {{ current_user.user_type }}">Logout</a>
+    </li>
 		{% endif %}
 	  </ul>
 	</div>
@@ -67,5 +67,6 @@
 	});
   });
 </script>
+{% include 'modal_change_password.html' %}
 </body>
 </html>
