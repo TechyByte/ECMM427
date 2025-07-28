@@ -82,14 +82,14 @@
     {% for mark in marks %}
         <tr>
             <td>{{ mark.marker.name }}</td>
-            <td>{% if mark.marker.id == current_user.id or current_user.obj.is_admin or (final_mark_is_ready and current_user.id == project.student_id )%}{{ mark.mark }}{% else %}hidden{% endif %}</td>
-            <td>{{ mark.feedback }}</td>
+            <td>{% if mark.marker.id == current_user.id or (final_mark_is_ready and current_user.id == project.student_id )%}{{ mark.mark }}{% else %}hidden{% endif %}</td>
+            <td>{% if mark.marker.id == current_user.id or (final_mark_is_ready and current_user.id == project.student_id )%}{{ mark.feedback }}{% else %}hidden{% endif %}</td>
             <td>{{ 'Yes' if mark.finalised else 'No' }}</td>
             <td>
                 {% if can_mark and mark.marker_id == current_user.id and not mark.finalised %}
                 <button class="btn btn-sm btn{% if not project.is_submitted %}-outline{% endif %}-primary" data-bs-toggle="modal" data-bs-target="#markModal{{ mark.id }}" {% if not project.is_submitted %}disabled{% endif %}>Submit Mark</button>
                 {% endif %}
-                {% if project.second_marker_id and (not mark.finalised) and mark.marker_id != project.supervisor_id %}
+                {% if current_user.is_admin and project.second_marker_id and (not mark.finalised) and mark.marker_id != project.supervisor_id %}
                   <form method="POST" action="{{ url_for('project.remove_second_marker', project_id=project.id) }}" style="display:inline;">
                     <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Remove marker?');">
                       Remove
