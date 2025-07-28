@@ -28,10 +28,14 @@
     <li class="list-group-item d-flex justify-content-between align-items-center">
       <span>
         {{ supervisor.name }} ({{ supervisor.email }})
+      {%  if supervisor.is_admin %}
+        <span class="badge bg-primary text-white">Module Leader</span>
+      {% endif %}
         {% for project in supervisor.projects_supervised %}
             <a href="{{ url_for('project.view_project', project_id=project.id) }}" class="btn btn-sm btn-outline-primary">{{ project.student.name }}</a>
         {% endfor %}
       </span>
+    <div class="ms-auto d-flex gap-2">
         {% if supervisor.id != current_user.id %}
           <form method="POST" action="{{ url_for('user.deactivate_user', user_id=supervisor.id) }}" style="display:inline;">
             <button type="submit" class="btn btn-link p-0" title="Deactivate User" onclick="return confirm('Are you sure you want to deactivate {{ supervisor.name }}?');">
@@ -39,11 +43,25 @@
             </button>
           </form>
         {% endif %}
+        {% if supervisor.id != current_user.id and not supervisor.is_admin %}
+          <form method="POST" action="{{ url_for('user.change_admin', user_id=supervisor.id, admin=True) }}" style="display:inline;">
+            <button type="submit" class="btn btn-link p-0" title="Promote User" onclick="return confirm('Are you sure you want to promote {{ supervisor.name }} to module leader?');">
+              <i class="bi bi-person-fill-up" style="color: blue; font-size: 1.2rem;"></i>
+            </button>
+          </form>
+        {% elif supervisor.id != current_user.id %}
+            <form method="POST" action="{{ url_for('user.change_admin', user_id=supervisor.id, admin=False) }}" style="display:inline;">
+            <button type="submit" class="btn btn-link p-0" title="Demote User" onclick="return confirm('Are you sure you want to demote {{ supervisor.name }}?');">
+              <i class="bi bi-person-fill-down" style="color: darkorange; font-size: 1.2rem;"></i>
+            </button>
+          </form>
+        {% endif %}
+    </div>
     </li>
   {% endfor %}
 </ul>
 
-<button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createStudentModal">Add New Student</button>
+<button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createStudentModal">Add New User</button>
 {% include "modal_create_user.html" %}
     {% if current_user.is_supervisor %}
     <hr>

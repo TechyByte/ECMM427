@@ -95,3 +95,24 @@ def deactivate_user(user_id):
         db.session.rollback()
         flash(f'Error deactivating user: {e}', 'danger')
     return redirect(url_for('user.home'))
+
+
+@user_bp.route('/change_admin/<int:user_id>/<admin>', methods=['POST'])
+@login_required
+def change_admin(user_id, admin):
+    if not (current_user.is_authenticated and current_user.is_admin):
+        flash('Only module leaders can promote users.', 'danger')
+        return redirect(url_for('user.home'))
+    user = User.query.get_or_404(user_id)
+    admin_bool = admin.lower() == 'true'
+    if user.is_admin == admin_bool:
+        flash(f'User is already {"an admin" if admin_bool else "not an admin"}.', 'info')
+        return redirect(url_for('user.home'))
+    try:
+        user.is_admin = admin_bool
+        db.session.commit()
+        flash(f'User {"granted" if admin_bool else "removed"} admin privileges successfully.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error changing admin status: {e}', 'danger')
+    return redirect(url_for('user.home'))
