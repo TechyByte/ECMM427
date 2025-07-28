@@ -8,7 +8,8 @@
     {% for p in projects %}
       <li class="list-group-item">
         <strong>{{ p.proposal.title }}</strong><br>
-        Supervisor: {{ p.supervisor.name }}
+        Supervisor: {{ p.supervisor.name }}<br>
+          Status: {{ p.status.value }}
       <br>
       <a href="{{ url_for("project.view_project", project_id=p.id) }}" class="btn btn-sm btn-outline-primary">View Project</a>
       </li>
