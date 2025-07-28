@@ -415,6 +415,36 @@ class ProjectManipulation(unittest.TestCase):
         db.session.commit()
         self.assertNotEqual(self.project.status, ProjectStatus.MARKING)
 
+    def test_removes_second_marker_successfully(self):
+        self.project.second_marker_id = self.inactive_supervisor_user.id
+        db.session.commit()
+        client = self.login(self.admin_user)
+        response = client.post(url_for('project.remove_second_marker', project_id=self.project.id), follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Second marker removed.', response.data)
+        db.session.refresh(self.project)
+        self.assertIsNone(self.project.second_marker_id)
+
+    def test_prevents_non_admin_from_removing_second_marker(self):
+        self.project.second_marker_id = self.inactive_supervisor_user.id
+        db.session.commit()
+        client = self.login(self.student_user)
+        response = client.post(url_for('project.remove_second_marker', project_id=self.project.id), follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Only admins can remove the second marker.', response.data)
+        db.session.refresh(self.project)
+        self.assertIsNotNone(self.project.second_marker_id)
+
+    def test_handles_removal_when_no_second_marker_exists(self):
+        self.project.second_marker_id = None
+        db.session.commit()
+        client = self.login(self.admin_user)
+        response = client.post(url_for('project.remove_second_marker', project_id=self.project.id), follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Second marker removed.', response.data)
+        db.session.refresh(self.project)
+        self.assertIsNone(self.project.second_marker_id)
+
     def test_allows_supervisor_to_edit_meeting_details(self):
         meeting = Meeting(
             project_id=self.project.id,
