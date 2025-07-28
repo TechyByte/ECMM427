@@ -64,6 +64,10 @@ def create_user():
     password = request.form.get("password")
     role = request.form.get("role")
 
+    if not (name and email and password and role):
+        flash("Error: All fields are required.", "error")
+        return redirect(url_for("user.home"))
+
     try:
         user = User(
             name=name,
