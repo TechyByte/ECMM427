@@ -524,19 +524,17 @@ class ProjectManipulation(unittest.TestCase):
         )
         db.session.add(meeting)
         db.session.commit()
-        self.app_context.push()
-        with self.flask_app.test_client() as client:
-            with client.session_transaction() as session:
-                session['_user_id'] = self.admin_user.id
-            response = client.post(url_for('project.edit_meeting', meeting_id=meeting.id), data={
-                'attendance': 1,
-                'outcome_notes': 'Admin updated meeting'
-            }, follow_redirects=True)
-            self.assertEqual(response.status_code, 200)
-            self.assertIn(b'Meeting updated.', response.data)
-            db.session.refresh(meeting)
-            self.assertTrue(meeting.attendance)
-            self.assertEqual(meeting.outcome_notes, 'Admin updated meeting')
+        client = self.login(self.admin_user)
+        response = client.post(url_for('project.edit_meeting', meeting_id=meeting.id), data={
+            'attendance': 1,
+            'outcome_notes': 'Admin updated meeting'
+        }, follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Meeting updated.', response.data)
+        db.session.refresh(meeting)
+        self.assertTrue(meeting.attendance)
+        self.assertEqual(meeting.outcome_notes, 'Admin updated meeting')
+
         client = self.login(self.admin_user)
         response = client.post(url_for('project.edit_meeting', meeting_id=meeting.id), data={
             'attendance': 1,
