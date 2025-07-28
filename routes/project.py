@@ -171,3 +171,17 @@ def remove_second_marker(project_id):
     db.session.commit()
     flash('Second marker removed.', 'success')
     return redirect(url_for('project.view_project', project_id=project_id))
+
+@project_bp.route('/project/<int:project_id>/archive', methods=['POST'])
+@login_required
+def archive_project(project_id):
+    project = Project.query.get_or_404(project_id)
+    if not current_user.is_admin:
+        flash('Only admins can archive projects.', 'danger')
+        return redirect(url_for('project.view_project', project_id=project_id))
+    if project.status == ProjectStatus.MARKS_CONFIRMED:
+        flash('Cannot archive project with confirmed marks.', 'danger')
+        return redirect(url_for('project.view_project', project_id=project_id))
+    project.archive()
+    flash('Project archived successfully.', 'success')
+    return redirect(url_for('user.home'))

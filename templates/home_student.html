@@ -77,4 +77,19 @@
       </tbody>
     </table>
 {% endif %}
+
+{% if old_projects %}
+    <hr>
+<h4>Old Projects</h4>
+<ul class="list-group mb-4">
+  {% for p in old_projects %}
+    <li class="list-group-item">
+      <strong>{{ p.proposal.title }}</strong><br>
+      Supervisor: {{ p.supervisor.name }}<br>
+      Status: {{ p.status.value }}<br>
+      <a href="{{ url_for("project.view_project", project_id=p.id) }}" class="btn btn-sm btn-outline-primary">View Project</a>
+    </li>
+    {% endfor %}
+</ul>
+{% endif %}
 {% endblock %}

@@ -4,11 +4,12 @@ from werkzeug.security import generate_password_hash
 
 from models import db, User, Proposal, Project, CatalogProposal, ProjectMark
 from models.Proposal import ProposalStatus
+from models.Project import ProjectStatus
 user_bp = Blueprint('user', __name__)
 
 def fao_supervisor(supervisor: User) -> ([Proposal],[Project],[Project]):
     pending_proposals = [p for p in Proposal.query.filter_by(supervisor_id=supervisor.id).all() if p.status == ProposalStatus.PENDING]
-    projects = Project.query.filter_by(supervisor_id=supervisor.id).all()
+    projects = [p for p in Project.query.filter_by(supervisor_id=supervisor.id).all() if p.status != ProjectStatus.ARCHIVED]
     marking_projects = [pm.project for pm in
                         ProjectMark.query.filter_by(marker_id=supervisor.id)
                         .join(Project)
@@ -37,14 +38,15 @@ def home():
 
     else:
         # Student view
-        projects = Project.query.filter_by(student_id=user.id).all()
+        projects = [p for p in Project.query.filter_by(student_id=user.id).all() if p.status == ProjectStatus.ACTIVE]
+        old_projects = [p for p in Project.query.filter_by(student_id=user.id).all() if p.status != ProjectStatus.ACTIVE]
         pending_proposals = [p for p in Proposal.query.filter_by(student_id=user.id).all() if p.status == ProposalStatus.PENDING]
         rejected_proposals = [p for p in Proposal.query.filter_by(student_id=user.id).all() if p.status == ProposalStatus.REJECTED]
         catalog = CatalogProposal.query.all()
         supervisors = User.get_active_supervisors()
         has_project = len(projects) > 0
-        return render_template("home_student.html", has_project=has_project,
-                               projects=projects, pending_proposals=pending_proposals, catalog=catalog,
+        return render_template("home_student.html", has_project=has_project, catalog=catalog,
+                               projects=projects, old_projects=old_projects, pending_proposals=pending_proposals,
                                rejected_proposals=rejected_proposals, supervisors=supervisors)
 
 

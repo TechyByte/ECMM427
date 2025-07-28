@@ -11,6 +11,7 @@ class ProjectStatus(Enum):
     SUBMITTED = "Submitted"
     MARKING = "Marking in Progress"
     MARKS_CONFIRMED = "Marks Confirmed"
+    ARCHIVED = "Archived"
 
 class Project(db.Model):
     __tablename__ = 'project'
@@ -30,13 +31,20 @@ class Project(db.Model):
     marks = relationship('ProjectMark', back_populates='project', cascade="all, delete-orphan")
 
     submitted_datetime = db.Column(db.DateTime, nullable=True)
+    archived_datetime = db.Column(db.DateTime, nullable=True)
 
     @hybrid_property
     def is_submitted(self):
         return self.submitted_datetime is not None
 
     @hybrid_property
+    def is_archived(self):
+        return self.archived_datetime is not None
+
+    @hybrid_property
     def status(self):
+        if self.is_archived:
+            return ProjectStatus.ARCHIVED
         final_mark = None
         if self.is_submitted:
             try:
@@ -72,6 +80,10 @@ class Project(db.Model):
             return self.get_final_mark()
         except NoConcordantProjectMarks:
             return None
+
+    def archive(self):
+        self.archived_datetime = db.func.now()
+        db.session.commit()
 
     __table_args__ = (
         db.CheckConstraint('second_marker_id IS NULL OR second_marker_id != supervisor_id',

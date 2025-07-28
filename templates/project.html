@@ -11,6 +11,13 @@
 </form>
 {% endif %}
 
+    {% if current_user.is_admin and not project.is_archived %}
+        <form method="post" action="{{ url_for('project.archive_project', project_id=project.id) }}">
+            <button class="btn btn-danger">Archive Project</button>
+        </form>
+    {% endif %}
+
+
 <hr>
 <h3>Meetings</h3>
 {% if can_create_meeting %}
@@ -109,7 +116,7 @@
 {% endif %}
 
 {# Add Second Marker Button for Admin if odd number of marks #}
-{% if (project.second_marker_id == None or project.marks|length % 2 != 0) and current_user.is_admin %}
+{% if (project.second_marker_id == None or project.marks|length % 2 != 0) and current_user.is_admin and not project.is_archived %}
   <button class="btn btn-warning mt-3" data-bs-toggle="modal" data-bs-target="#addMarkerModal">Add Additional Marker</button>
     {# Add Second Marker Modal #}
   <div class="modal fade" id="addMarkerModal" tabindex="-1">
