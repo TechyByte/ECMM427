@@ -70,6 +70,21 @@ def edit_meeting(meeting_id):
     flash('Meeting updated.', 'success')
     return redirect(url_for('project.view_project', project_id=meeting.project_id))
 
+
+@project_bp.route('/meeting/<int:meeting_id>/delete', methods=['POST'])
+@login_required
+def delete_meeting(meeting_id):
+    meeting = Meeting.query.get_or_404(meeting_id)
+    project = Project.query.get(meeting.project_id)
+    # Only supervisor or admin can delete
+    if current_user.id not in [project.supervisor_id] and not current_user.is_admin:
+        flash('Not authorized.', 'danger')
+        return redirect(url_for('project.view_project', project_id=meeting.project_id))
+    db.session.delete(meeting)
+    db.session.commit()
+    flash('Meeting deleted.', 'success')
+    return redirect(url_for('project.view_project', project_id=meeting.project_id))
+
 @project_bp.route('/mark/<int:mark_id>/submit', methods=['POST'])
 @login_required
 def submit_mark(mark_id):

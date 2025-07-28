@@ -535,6 +535,41 @@ class ProjectManipulation(unittest.TestCase):
         self.assertTrue(meeting.attendance)
         self.assertEqual(meeting.outcome_notes, 'Admin updated meeting')
 
+    def test_deletes_meeting_successfully_when_authorized(self):
+        meeting = Meeting(
+            project_id=self.project.id,
+            meeting_start=datetime.utcnow(),
+            meeting_end=datetime.utcnow(),
+            location="Room 101"
+        )
+        db.session.add(meeting)
+        db.session.commit()
+        client = self.login(self.supervisor_user)
+        response = client.post(url_for('project.delete_meeting', meeting_id=meeting.id), follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Meeting deleted.', response.data)
+        self.assertIsNone(Meeting.query.get(meeting.id))
+
+    def test_prevents_deleting_meeting_when_not_authorized(self):
+        meeting = Meeting(
+            project_id=self.project.id,
+            meeting_start=datetime.utcnow(),
+            meeting_end=datetime.utcnow(),
+            location="Room 101"
+        )
+        db.session.add(meeting)
+        db.session.commit()
+        client = self.login(self.student_user)
+        response = client.post(url_for('project.delete_meeting', meeting_id=meeting.id), follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Not authorized.', response.data)
+        self.assertIsNotNone(Meeting.query.get(meeting.id))
+
+    def test_prevents_deleting_nonexistent_meeting(self):
+        client = self.login(self.supervisor_user)
+        response = client.post(url_for('project.delete_meeting', meeting_id=9999), follow_redirects=True)
+        self.assertEqual(response.status_code, 404)
+
     def test_archives_project_successfully(self):
         client = self.login(self.admin_user)
         response = client.post(url_for('project.archive_project', project_id=self.project.id), follow_redirects=True)
