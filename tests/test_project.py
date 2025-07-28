@@ -7,6 +7,7 @@ from datetime import datetime
 
 import sqlalchemy
 from flask import url_for
+from flask.testing import FlaskClient
 
 from exceptions import InvalidStudent, InvalidSupervisor, MaxProposalsReachedError, NoConcordantProjectMarks
 
@@ -116,6 +117,7 @@ class ProjectManipulation(unittest.TestCase):
         db.session.add(self.submitted_project)
         db.session.commit()
         db.session.add(ProjectMark(project_id=self.submitted_project.id, marker_id=self.supervisor_user.id))
+
         db.session.commit()
 
     def tearDown(self):
@@ -124,103 +126,90 @@ class ProjectManipulation(unittest.TestCase):
         os.close(self.db_fd)
         os.unlink(self.db_path)
 
+    def login(self, user: User) -> FlaskClient:
+        client = self.flask_app.test_client()
+        with client.session_transaction() as session:
+            session['_user_id'] = user.id
+        return client
+
+    def get_with_login(self, user: User, url: str, **kwargs):
+        client = self.flask_app.test_client()
+        with client.session_transaction() as session:
+            session['_user_id'] = user.id
+        return client.get(url, **kwargs)
+
     def test_assigns_second_marker_successfully(self):
-        self.app_context.push()
-        with self.flask_app.test_client() as client:
-            with client.session_transaction() as session:
-                session['_user_id'] = self.admin_user.id
-            response = client.post(url_for('project.add_marker', project_id=self.project.id), data={
-                'add_marker_id': self.inactive_supervisor_user.id
-            }, follow_redirects=True)
-            self.assertEqual(response.status_code, 200)
-            self.assertIn(b'Second marker assigned successfully.', response.data)
-            self.assertEqual(self.project.second_marker_id, self.inactive_supervisor_user.id)
+        client = self.login(self.admin_user)
+        response = client.post(url_for('project.add_marker', project_id=self.project.id), data={
+            'add_marker_id': self.inactive_supervisor_user.id
+        }, follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Second marker assigned successfully.', response.data)
+        self.assertEqual(self.project.second_marker_id, self.inactive_supervisor_user.id)
 
     def test_prevents_non_admin_from_assigning_second_marker(self):
-        self.app_context.push()
-        with self.flask_app.test_client() as client:
-            with client.session_transaction() as session:
-                session['_user_id'] = self.student_user.id
-            response = client.post(url_for('project.add_marker', project_id=self.project.id), data={
-                'add_marker_id': self.inactive_supervisor_user.id
-            }, follow_redirects=True)
-            self.assertEqual(response.status_code, 200)
-            self.assertIn(b'Only admins can assign a second marker.', response.data)
-            self.assertIsNone(self.project.second_marker_id)
+        client = self.login(self.student_user)
+        response = client.post(url_for('project.add_marker', project_id=self.project.id), data={
+            'add_marker_id': self.inactive_supervisor_user.id
+        }, follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Only admins can assign a second marker.', response.data)
+        self.assertIsNone(self.project.second_marker_id)
 
     def test_prevents_assigning_supervisor_as_second_marker(self):
-        self.app_context.push()
-        with self.flask_app.test_client() as client:
-            with client.session_transaction() as session:
-                session['_user_id'] = self.admin_user.id
-            response = client.post(url_for('project.add_marker', project_id=self.project.id), data={
-                'add_marker_id': self.supervisor_user.id
-            }, follow_redirects=True)
-            self.assertEqual(response.status_code, 200)
-            self.assertIn(b'Supervisor cannot be assigned as second marker.', response.data)
-            self.assertIsNone(self.project.second_marker_id)
+        client = self.login(self.admin_user)
+        response = client.post(url_for('project.add_marker', project_id=self.project.id), data={
+            'add_marker_id': self.supervisor_user.id
+        }, follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Supervisor cannot be assigned as second marker.', response.data)
+        self.assertIsNone(self.project.second_marker_id)
 
     def test_prevents_assigning_second_marker_without_selection(self):
-        self.app_context.push()
-        with self.flask_app.test_client() as client:
-            with client.session_transaction() as session:
-                session['_user_id'] = self.admin_user.id
-            response = client.post(url_for('project.add_marker', project_id=self.project.id), data={}, follow_redirects=True)
-            self.assertEqual(response.status_code, 200)
-            self.assertIn(b'No second marker selected.', response.data)
-            self.assertIsNone(self.project.second_marker_id)
+        client = self.login(self.admin_user)
+        response = client.post(url_for('project.add_marker', project_id=self.project.id), data={}, follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'No second marker selected.', response.data)
+        self.assertIsNone(self.project.second_marker_id)
 
     def test_allows_student_to_submit_active_project(self):
         self.assertIsNone(self.project.submitted_datetime)
-        self.app_context.push()
-        with self.flask_app.test_client() as client:
-            with client.session_transaction() as session:
-                session['_user_id'] = self.student_user.id
-            response = client.post(url_for('project.submit_project', project_id=self.project.id), follow_redirects=True)
-            self.assertEqual(response.status_code, 200)
-            self.assertIn(b'Project marked as submitted.', response.data)
-            self.assertIsNotNone(self.project.submitted_datetime)
-            self.project.submitted_datetime = None  # Reset for further tests
-            db.session.commit()
+        client = self.login(self.student_user)
+        response = client.post(url_for('project.submit_project', project_id=self.project.id), follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Project marked as submitted.', response.data)
+        self.assertIsNotNone(self.project.submitted_datetime)
+        self.project.submitted_datetime = None  # Reset for further tests
+        db.session.commit()
 
     def test_prevents_non_student_from_submitting_project(self):
+        client = self.login(self.supervisor_user)
+        response = client.post(url_for('project.submit_project', project_id=self.project.id), follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Only the student can submit the project.', response.data)
         self.assertIsNone(self.project.submitted_datetime)
-        self.app_context.push()
-        with self.flask_app.test_client() as client:
-            with client.session_transaction() as session:
-                session['_user_id'] = self.supervisor_user.id
-            response = client.post(url_for('project.submit_project', project_id=self.project.id), follow_redirects=True)
-            self.assertEqual(response.status_code, 200)
-            self.assertIn(b'Only the student can submit the project.', response.data)
-            self.assertIsNone(self.project.submitted_datetime)
 
     def test_handles_submission_error_gracefully(self):
         self.assertIsNone(self.project.submitted_datetime)
         with unittest.mock.patch.object(db.session, "commit", side_effect=Exception('Database error')):
-            self.app_context.push()
-            with self.flask_app.test_client() as client:
-                with client.session_transaction() as session:
-                    session['_user_id'] = self.student_user.id
-                response = client.post(url_for('project.submit_project', project_id=self.project.id), follow_redirects=True)
-                self.assertEqual(response.status_code, 200)
-                self.assertIn(b'Error submitting project: Database error', response.data)
-                self.assertIsNone(self.project.submitted_datetime)
+            client = self.login(self.student_user)
+            response = client.post(url_for('project.submit_project', project_id=self.project.id), follow_redirects=True)
+            self.assertEqual(response.status_code, 200)
+            self.assertIn(b'Error submitting project: Database error', response.data)
+            self.assertIsNone(self.project.submitted_datetime)
 
     def test_allows_supervisor_to_submit_mark_for_submitted_project(self):
-        self.app_context.push()
         mark = ProjectMark.query.filter_by(project_id=self.submitted_project.id, marker_id=self.supervisor_user.id).first()
-        with self.flask_app.test_client() as client:
-            with client.session_transaction() as session:
-                session['_user_id'] = self.supervisor_user.id
-            response = client.post(url_for('project.submit_mark', mark_id=mark.id), data={
-                'grade': 85,
-                'feedback': 'Good work'
-            }, follow_redirects=True)
-            self.assertEqual(response.status_code, 200)
-            self.assertIn(b'Mark submitted.', response.data)
-            self.assertTrue(mark.finalised)
-            self.assertEqual(mark.mark, 85)
-            self.assertEqual(mark.feedback, 'Good work')
+        client = self.login(self.supervisor_user)
+        response = client.post(url_for('project.submit_mark', mark_id=mark.id), data={
+            'grade': 85,
+            'feedback': 'Good work'
+        }, follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Mark submitted.', response.data)
+        self.assertTrue(mark.finalised)
+        self.assertEqual(mark.mark, 85)
+        self.assertEqual(mark.feedback, 'Good work')
 
     def test_prevents_non_marker_from_submitting_mark(self):
         mark = ProjectMark(
@@ -230,17 +219,14 @@ class ProjectManipulation(unittest.TestCase):
         db.session.add(mark)
         db.session.commit()
         self.assertIsNone(self.project.submitted_datetime)
-        self.app_context.push()
-        with self.flask_app.test_client() as client:
-            with client.session_transaction() as session:
-                session['_user_id'] = self.student_user.id
-            response = client.post(url_for('project.submit_mark', mark_id=mark.id), data={
-                'grade': 85,
-                'feedback': 'Good work'
-            }, follow_redirects=True)
-            self.assertEqual(response.status_code, 200)
-            self.assertIn(b'Not authorised.', response.data)
-            self.assertFalse(mark.finalised)
+        client = self.login(self.student_user)
+        response = client.post(url_for('project.submit_mark', mark_id=mark.id), data={
+            'grade': 85,
+            'feedback': 'Good work'
+        }, follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Not authorised.', response.data)
+        self.assertFalse(mark.finalised)
 
     def test_prevents_mark_submission_for_non_submitted_project(self):
         mark = ProjectMark(
@@ -251,17 +237,14 @@ class ProjectManipulation(unittest.TestCase):
         db.session.commit()
         self.assertIsNone(self.project.submitted_datetime)
         self.assertFalse(mark.finalised)
-        self.app_context.push()
-        with self.flask_app.test_client() as client:
-            with client.session_transaction() as session:
-                session['_user_id'] = self.supervisor_user.id
-            response = client.post(url_for('project.submit_mark', mark_id=mark.id), data={
-                'grade': 85,
-                'feedback': 'Good work'
-            }, follow_redirects=True)
-            self.assertEqual(response.status_code, 200)
-            self.assertIn(b'Project must be submitted before marking.', response.data)
-            self.assertFalse(mark.finalised)
+        client = self.login(self.supervisor_user)
+        response = client.post(url_for('project.submit_mark', mark_id=mark.id), data={
+            'grade': 85,
+            'feedback': 'Good work'
+        }, follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Project must be submitted before marking.', response.data)
+        self.assertFalse(mark.finalised)
 
     def test_prevents_resubmission_of_finalised_mark(self):
         mark = ProjectMark(
@@ -275,18 +258,15 @@ class ProjectManipulation(unittest.TestCase):
         db.session.commit()
 
         self.assertTrue(mark.finalised)
-        self.app_context.push()
-        with self.flask_app.test_client() as client:
-            with client.session_transaction() as session:
-                session['_user_id'] = self.supervisor_user.id
-            response = client.post(url_for('project.submit_mark', mark_id=mark.id), data={
-                'grade': 90,
-                'feedback': 'Updated feedback'
-            }, follow_redirects=True)
-            self.assertEqual(response.status_code, 200)
-            self.assertIn(b'Mark already finalised.', response.data)
-            self.assertEqual(mark.mark, 85)
-            self.assertEqual(mark.feedback, 'Good work')
+        client = self.login(self.supervisor_user)
+        response = client.post(url_for('project.submit_mark', mark_id=mark.id), data={
+            'grade': 90,
+            'feedback': 'Updated feedback'
+        }, follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Mark already finalised.', response.data)
+        self.assertEqual(mark.mark, 85)
+        self.assertEqual(mark.feedback, 'Good work')
 
     def test_starts_new_marking_round_for_non_concordant_marks(self):
         ProjectMark.query.filter_by(project_id=self.submitted_project.id).delete()
@@ -307,18 +287,15 @@ class ProjectManipulation(unittest.TestCase):
         db.session.refresh(mark1)
         db.session.commit()
 
-        self.app_context.push()
-        with self.flask_app.test_client() as client:
-            with client.session_transaction() as session:
-                session['_user_id'] = self.supervisor_user.id
-            response = client.post(url_for('project.submit_mark', mark_id=mark1.id), data={
-                'grade': 85,
-                'feedback': 'Good work'
-            }, follow_redirects=True)
-            self.assertEqual(response.status_code, 200)
-            self.assertIn(b'Non-concordant marks detected. New marking round started for the two markers.', response.data)
-            new_marks = ProjectMark.query.filter_by(project_id=self.submitted_project.id, finalised=False).all()
-            self.assertEqual(len(new_marks), 2)
+        client = self.login(self.supervisor_user)
+        response = client.post(url_for('project.submit_mark', mark_id=mark1.id), data={
+            'grade': 85,
+            'feedback': 'Good work'
+        }, follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Non-concordant marks detected. New marking round started for the two markers.', response.data)
+        new_marks = ProjectMark.query.filter_by(project_id=self.submitted_project.id, finalised=False).all()
+        self.assertEqual(len(new_marks), 2)
 
     def test_allows_second_marker_to_submit_concordant_mark(self):
         self.app_context.push()
@@ -342,20 +319,18 @@ class ProjectManipulation(unittest.TestCase):
         db.session.commit()
         self.assertTrue(self.submitted_project.is_submitted)
         # Second marker submits a concordant mark (within 5)
-        with self.flask_app.test_client() as client:
-            with client.session_transaction() as session:
-                session['_user_id'] = self.inactive_supervisor_user.id
-            response = client.post(url_for('project.submit_mark', mark_id=second_mark.id), data={
-                'grade': 84,
-                'feedback': 'Concordant mark'
-            }, follow_redirects=True)
-            self.assertEqual(response.status_code, 200)
-            self.assertIn(b'Mark submitted.', response.data)
-            db.session.refresh(second_mark)
-            self.assertTrue(second_mark.finalised)
-            self.assertEqual(second_mark.mark, 84)
-            # Project status should be updated to MARKS_CONFIRMED or MARKING depending on implementation
-            self.assertIn(self.submitted_project.status, [ProjectStatus.MARKS_CONFIRMED, ProjectStatus.MARKING])
+        client = self.login(self.inactive_supervisor_user)
+        response = client.post(url_for('project.submit_mark', mark_id=second_mark.id), data={
+            'grade': 84,
+            'feedback': 'Concordant mark'
+        }, follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Mark submitted.', response.data)
+        db.session.refresh(second_mark)
+        self.assertTrue(second_mark.finalised)
+        self.assertEqual(second_mark.mark, 84)
+        # Project status should be updated to MARKS_CONFIRMED or MARKING depending on implementation
+        self.assertIn(self.submitted_project.status, [ProjectStatus.MARKS_CONFIRMED, ProjectStatus.MARKING])
 
     def test_allows_second_marker_to_submit_non_concordant_mark_and_starts_new_round(self):
         self.app_context.push()
@@ -377,24 +352,21 @@ class ProjectManipulation(unittest.TestCase):
         supervisor_mark.mark = 80
         supervisor_mark.finalised = True
         db.session.commit()
-        # Second marker submits a non-concordant mark (difference > 5)
-        with self.flask_app.test_client() as client:
-            with client.session_transaction() as session:
-                session['_user_id'] = self.inactive_supervisor_user.id
-            response = client.post(url_for('project.submit_mark', mark_id=second_mark.id), data={
-                'grade': 70,
-                'feedback': 'Non-concordant mark'
-            }, follow_redirects=True)
-            self.assertEqual(response.status_code, 200)
-            self.assertIn(b'Non-concordant marks detected. New marking round started for the two markers.', response.data)
-            db.session.refresh(second_mark)
-            self.assertTrue(second_mark.finalised)
-            self.assertEqual(second_mark.mark, 70)
-            # There should be two new unfinalised marks for a new round
-            new_marks = ProjectMark.query.filter_by(
-                project_id=self.submitted_project.id, finalised=False
-            ).all()
-            self.assertEqual(len(new_marks), 2)
+        client = self.login(self.inactive_supervisor_user)
+        response = client.post(url_for('project.submit_mark', mark_id=second_mark.id), data={
+            'grade': 70,
+            'feedback': 'Non-concordant mark'
+        }, follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Non-concordant marks detected. New marking round started for the two markers.', response.data)
+        db.session.refresh(second_mark)
+        self.assertTrue(second_mark.finalised)
+        self.assertEqual(second_mark.mark, 70)
+        # There should be two new unfinalised marks for a new round
+        new_marks = ProjectMark.query.filter_by(
+            project_id=self.submitted_project.id, finalised=False
+        ).all()
+        self.assertEqual(len(new_marks), 2)
 
     def test_returns_final_mark_when_concordant_marks_exist(self):
         mark1 = ProjectMark(project_id=self.project.id, marker_id=self.supervisor_user.id, mark=80, finalised=True)
@@ -452,19 +424,16 @@ class ProjectManipulation(unittest.TestCase):
         )
         db.session.add(meeting)
         db.session.commit()
-        self.app_context.push()
-        with self.flask_app.test_client() as client:
-            with client.session_transaction() as session:
-                session['_user_id'] = self.supervisor_user.id
-            response = client.post(url_for('project.edit_meeting', meeting_id=meeting.id), data={
-                'attendance': 1,
-                'outcome_notes': 'Discussed project progress'
-            }, follow_redirects=True)
-            self.assertEqual(response.status_code, 200)
-            self.assertIn(b'Meeting updated.', response.data)
-            db.session.refresh(meeting)
-            self.assertTrue(meeting.attendance)
-            self.assertEqual(meeting.outcome_notes, 'Discussed project progress')
+        client = self.login(self.supervisor_user)
+        response = client.post(url_for('project.edit_meeting', meeting_id=meeting.id), data={
+            'attendance': 1,
+            'outcome_notes': 'Discussed project progress'
+        }, follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Meeting updated.', response.data)
+        db.session.refresh(meeting)
+        self.assertTrue(meeting.attendance)
+        self.assertEqual(meeting.outcome_notes, 'Discussed project progress')
 
     def test_prevents_student_from_editing_meeting_details(self):
         meeting = Meeting(
@@ -475,19 +444,16 @@ class ProjectManipulation(unittest.TestCase):
         )
         db.session.add(meeting)
         db.session.commit()
-        self.app_context.push()
-        with self.flask_app.test_client() as client:
-            with client.session_transaction() as session:
-                session['_user_id'] = self.student_user.id
-            response = client.post(url_for('project.edit_meeting', meeting_id=meeting.id), data={
-                'attendance': 1,
-                'outcome_notes': 'Attempted edit'
-            }, follow_redirects=True)
-            self.assertEqual(response.status_code, 200)
-            self.assertIn(b'Not authorized.', response.data)
-            db.session.refresh(meeting)
-            self.assertFalse(meeting.attendance)
-            self.assertIsNone(meeting.outcome_notes)
+        client = self.login(self.student_user)
+        response = client.post(url_for('project.edit_meeting', meeting_id=meeting.id), data={
+            'attendance': 1,
+            'outcome_notes': 'Attempted edit'
+        }, follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Not authorized.', response.data)
+        db.session.refresh(meeting)
+        self.assertFalse(meeting.attendance)
+        self.assertIsNone(meeting.outcome_notes)
 
     def test_prevents_editing_meeting_by_unauthorized_supervisor(self):
         other_supervisor = User(
@@ -508,19 +474,16 @@ class ProjectManipulation(unittest.TestCase):
         )
         db.session.add(meeting)
         db.session.commit()
-        self.app_context.push()
-        with self.flask_app.test_client() as client:
-            with client.session_transaction() as session:
-                session['_user_id'] = other_supervisor.id
-            response = client.post(url_for('project.edit_meeting', meeting_id=meeting.id), data={
-                'attendance': 1,
-                'outcome_notes': 'Unauthorized edit'
-            }, follow_redirects=True)
-            self.assertEqual(response.status_code, 200)
-            self.assertIn(b'Not authorized.', response.data)
-            db.session.refresh(meeting)
-            self.assertFalse(meeting.attendance)
-            self.assertIsNone(meeting.outcome_notes)
+        client = self.login(other_supervisor)
+        response = client.post(url_for('project.edit_meeting', meeting_id=meeting.id), data={
+            'attendance': 1,
+            'outcome_notes': 'Unauthorized edit'
+        }, follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Not authorized.', response.data)
+        db.session.refresh(meeting)
+        self.assertFalse(meeting.attendance)
+        self.assertIsNone(meeting.outcome_notes)
 
     def test_allows_admin_to_edit_meeting_details(self):
         meeting = Meeting(
@@ -544,6 +507,16 @@ class ProjectManipulation(unittest.TestCase):
             db.session.refresh(meeting)
             self.assertTrue(meeting.attendance)
             self.assertEqual(meeting.outcome_notes, 'Admin updated meeting')
+        client = self.login(self.admin_user)
+        response = client.post(url_for('project.edit_meeting', meeting_id=meeting.id), data={
+            'attendance': 1,
+            'outcome_notes': 'Admin updated meeting'
+        }, follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Meeting updated.', response.data)
+        db.session.refresh(meeting)
+        self.assertTrue(meeting.attendance)
+        self.assertEqual(meeting.outcome_notes, 'Admin updated meeting')
 
 
 if __name__ == '__main__':
