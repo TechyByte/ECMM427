@@ -43,11 +43,23 @@ def create_meeting(project_id):
         return redirect(url_for('project.view_project', project_id=project_id))
     meeting_start = request.form.get('meeting_start')
     meeting_end = request.form.get('meeting_end')
+    if not (meeting_start and meeting_end):
+        flash('Meeting start and end times are required.', 'danger')
+        return redirect(url_for('project.view_project', project_id=project_id))
+    try:
+        meeting_start = datetime.fromisoformat(meeting_start)
+        meeting_end = datetime.combine(meeting_start.date(), datetime.strptime(meeting_end, "%H:%M").time())
+    except ValueError as e:
+        flash(f'Invalid meeting end time format: {e}', 'danger')
+        return redirect(url_for('project.view_project', project_id=project_id))
     location = request.form.get('location')
+    if not location:
+        flash('Meeting location is required.', 'danger')
+        return redirect(url_for('project.view_project', project_id=project_id))
     meeting = Meeting(
         project_id=project_id,
-        meeting_start=datetime.fromisoformat(meeting_start),
-        meeting_end=datetime.fromisoformat(meeting_end),
+        meeting_start=meeting_start,
+        meeting_end=meeting_end,
         location=location
     )
     db.session.add(meeting)
