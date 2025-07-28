@@ -50,7 +50,7 @@
 {% endif %}
 
 {% if not (pending_proposals or projects) %}
-        <p>You don’t have any proposals or projects yet.</p>
+        <p>You don’t have any {% if old_projects %}active {% endif %}proposals or projects{% if not old_projects %} yet{% endif %}.</p>
 
   <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#proposalModal">Create Proposal</button>
 {% endif %}

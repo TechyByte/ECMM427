@@ -3,9 +3,13 @@
 <h2>Project: {{ project.proposal.title }}</h2>
 <p><strong>Description:</strong> {{ project.proposal.description }}</p>
 <p><strong>Student:</strong> {{ project.student.name }} | <strong>Supervisor:</strong> {{ project.supervisor.name }}{% if project.second_marker %} | <strong>Second Marker:</strong> {{ project.second_marker.name }}{% endif %}</p>
-<p><strong>Status:</strong> {{ project.status.value if project.status else 'N/A' }}</p>
+<p><strong>Status:</strong> {{ project.status.value if project.status else 'N/A' }}
 
-{% if can_submit and not project.is_submitted %}
+
+{% if project.is_submitted %}
+ on {{ project.submitted_datetime.strftime('%Y-%m-%d %H:%M') if project.submitted_datetime else 'Not submitted' }}</p>
+{% endif %}
+{% if can_submit and not project.is_submitted and current_user.id == project.student_id %}
 <form method="post" action="{{ url_for('project.submit_project', project_id=project.id) }}">
     <button class="btn btn-warning">Mark as Submitted</button>
 </form>
@@ -19,7 +23,9 @@
 
 
 <hr>
+    {%  if meetings %}
 <h3>Meetings</h3>
+    {% endif %}
 {% if can_create_meeting %}
 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createMeetingModal">Create Meeting</button>
 {% endif %}
