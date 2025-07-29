@@ -48,6 +48,10 @@ def create_meeting(project_id):
         return redirect(url_for('project.view_project', project_id=project_id))
     try:
         meeting_start = datetime.fromisoformat(meeting_start)
+    except ValueError as e:
+        flash(f'Invalid meeting start time format: {e}', 'danger')
+        return redirect(url_for('project.view_project', project_id=project_id))
+    try:
         meeting_end = datetime.combine(meeting_start.date(), datetime.strptime(meeting_end, "%H:%M").time())
     except ValueError as e:
         flash(f'Invalid meeting end time format: {e}', 'danger')
