@@ -3,7 +3,7 @@ import sqlite3
 import tempfile
 import unittest
 import unittest.mock
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import sqlalchemy
 from flask import url_for
@@ -449,7 +449,7 @@ class ProjectManipulation(unittest.TestCase):
         meeting = Meeting(
             project_id=self.project.id,
             meeting_start=datetime.utcnow(),
-            meeting_end=datetime.utcnow(),
+            meeting_end=datetime.utcnow() + timedelta(hours=1),
             location="Room 101"
         )
         db.session.add(meeting)
@@ -469,7 +469,7 @@ class ProjectManipulation(unittest.TestCase):
         meeting = Meeting(
             project_id=self.project.id,
             meeting_start=datetime.utcnow(),
-            meeting_end=datetime.utcnow(),
+            meeting_end=datetime.utcnow() + timedelta(hours=1),
             location="Room 101"
         )
         db.session.add(meeting)
@@ -499,7 +499,7 @@ class ProjectManipulation(unittest.TestCase):
         meeting = Meeting(
             project_id=self.project.id,
             meeting_start=datetime.utcnow(),
-            meeting_end=datetime.utcnow(),
+            meeting_end=datetime.utcnow() + timedelta(hours=1),
             location="Room 101"
         )
         db.session.add(meeting)
@@ -519,7 +519,7 @@ class ProjectManipulation(unittest.TestCase):
         meeting = Meeting(
             project_id=self.project.id,
             meeting_start=datetime.utcnow(),
-            meeting_end=datetime.utcnow(),
+            meeting_end=datetime.utcnow() + timedelta(hours=1),
             location="Room 101"
         )
         db.session.add(meeting)
@@ -539,7 +539,7 @@ class ProjectManipulation(unittest.TestCase):
         meeting = Meeting(
             project_id=self.project.id,
             meeting_start=datetime.utcnow(),
-            meeting_end=datetime.utcnow(),
+            meeting_end=datetime.utcnow() + timedelta(hours=1),
             location="Room 101"
         )
         db.session.add(meeting)
@@ -554,7 +554,7 @@ class ProjectManipulation(unittest.TestCase):
         meeting = Meeting(
             project_id=self.project.id,
             meeting_start=datetime.utcnow(),
-            meeting_end=datetime.utcnow(),
+            meeting_end=datetime.utcnow() + timedelta(hours=1),
             location="Room 101"
         )
         db.session.add(meeting)
