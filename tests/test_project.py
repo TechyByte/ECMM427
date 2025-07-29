@@ -638,6 +638,79 @@ class ProjectManipulation(unittest.TestCase):
         db.session.refresh(self.submitted_project)
         self.assertTrue(self.submitted_project.is_archived)
 
+    def test_creates_meeting_successfully_with_valid_data(self):
+        client = self.login(self.supervisor_user)
+        response = client.post(url_for('project.create_meeting', project_id=self.project.id), data={
+            'meeting_start': datetime.utcnow().isoformat(),
+            'meeting_end': (datetime.utcnow() + timedelta(hours=1)).strftime('%H:%M'),
+            'location': 'Room 101'
+        }, follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Meeting created.', response.data)
+        meeting = Meeting.query.filter_by(project_id=self.project.id).first()
+        self.assertIsNotNone(meeting)
+        self.assertEqual(meeting.location, 'Room 101')
+
+    def test_prevents_meeting_creation_by_non_supervisor(self):
+        client = self.login(self.student_user)
+        response = client.post(url_for('project.create_meeting', project_id=self.project.id), data={
+            'meeting_start': datetime.utcnow().isoformat(),
+            'meeting_end': (datetime.utcnow() + timedelta(hours=1)).strftime('%H:%M'),
+            'location': 'Room 101'
+        }, follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Only the supervisor can create meetings.', response.data)
+        meeting = Meeting.query.filter_by(project_id=self.project.id).first()
+        self.assertIsNone(meeting)
+
+    def test_prevents_meeting_creation_with_missing_start_or_end_time(self):
+        client = self.login(self.supervisor_user)
+        response = client.post(url_for('project.create_meeting', project_id=self.project.id), data={
+            'meeting_start': '',
+            'meeting_end': '',
+            'location': 'Room 101'
+        }, follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Meeting start and end times are required.', response.data)
+        meeting = Meeting.query.filter_by(project_id=self.project.id).first()
+        self.assertIsNone(meeting)
+
+    def test_prevents_meeting_creation_with_invalid_start_time_format(self):
+        client = self.login(self.supervisor_user)
+        response = client.post(url_for('project.create_meeting', project_id=self.project.id), data={
+            'meeting_start': 'invalid-date',
+            'meeting_end': (datetime.utcnow() + timedelta(hours=1)).strftime('%H:%M'),
+            'location': 'Room 101'
+        }, follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Invalid meeting start time format:', response.data)
+        meeting = Meeting.query.filter_by(project_id=self.project.id).first()
+        self.assertIsNone(meeting)
+
+    def test_prevents_meeting_creation_with_invalid_end_time_format(self):
+        client = self.login(self.supervisor_user)
+        response = client.post(url_for('project.create_meeting', project_id=self.project.id), data={
+            'meeting_start': datetime.utcnow().isoformat(),
+            'meeting_end': 'invalid-time',
+            'location': 'Room 101'
+        }, follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Invalid meeting end time format:', response.data)
+        meeting = Meeting.query.filter_by(project_id=self.project.id).first()
+        self.assertIsNone(meeting)
+
+    def test_prevents_meeting_creation_with_missing_location(self):
+        client = self.login(self.supervisor_user)
+        response = client.post(url_for('project.create_meeting', project_id=self.project.id), data={
+            'meeting_start': datetime.utcnow().isoformat(),
+            'meeting_end': (datetime.utcnow() + timedelta(hours=1)).strftime('%H:%M'),
+            'location': ''
+        }, follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Meeting location is required.', response.data)
+        meeting = Meeting.query.filter_by(project_id=self.project.id).first()
+        self.assertIsNone(meeting)
+
 
 
 if __name__ == '__main__':
