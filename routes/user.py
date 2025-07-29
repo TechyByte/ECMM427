@@ -14,7 +14,7 @@ def fao_supervisor(supervisor: User) -> ([Proposal],[Project],[Project]):
                         ProjectMark.query.filter_by(marker_id=supervisor.id)
                         .join(Project)
                         .filter(Project.supervisor_id != supervisor.id)
-                        .group_by(ProjectMark.project_id).all() if pm.project.is_submitted]
+                        .group_by(ProjectMark.project_id).all() if pm.project.is_submitted and not pm.project.is_archived]
     return pending_proposals, projects, marking_projects
 
 @user_bp.route("/", methods=["GET", "POST"])

@@ -182,6 +182,14 @@ class ProjectManipulation(unittest.TestCase):
         self.project.submitted_datetime = None  # Reset for further tests
         db.session.commit()
 
+    def test_prevents_student_from_submitting_already_submitted_project(self):
+        self.assertIsNotNone(self.submitted_project.submitted_datetime)
+        client = self.login(self.student_user2)
+        response = client.post(url_for('project.submit_project', project_id=self.submitted_project.id), follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Project cannot be submitted if project is not active.', response.data)
+        self.assertIsNotNone(self.submitted_project.submitted_datetime)
+
     def test_prevents_non_student_from_submitting_project(self):
         client = self.login(self.supervisor_user)
         response = client.post(url_for('project.submit_project', project_id=self.project.id), follow_redirects=True)
@@ -570,7 +578,7 @@ class ProjectManipulation(unittest.TestCase):
         response = client.post(url_for('project.delete_meeting', meeting_id=9999), follow_redirects=True)
         self.assertEqual(response.status_code, 404)
 
-    def test_archives_project_successfully(self):
+    def test_archives_active_project_successfully(self):
         client = self.login(self.admin_user)
         response = client.post(url_for('project.archive_project', project_id=self.project.id), follow_redirects=True)
         self.assertEqual(response.status_code, 200)
@@ -586,7 +594,7 @@ class ProjectManipulation(unittest.TestCase):
         db.session.refresh(self.project)
         self.assertFalse(self.project.is_archived)
 
-    def test_prevents_archiving_project_with_confirmed_marks(self):
+    def test_allows_archiving_project_with_confirmed_marks(self):
         client = self.login(self.admin_user)
         # Ensure the project has confirmed marks
         mark1 = ProjectMark(project_id=self.submitted_project.id, marker_id=self.supervisor_user.id, mark=90, finalised=True)
@@ -595,9 +603,41 @@ class ProjectManipulation(unittest.TestCase):
         db.session.commit()
         response = client.post(url_for('project.archive_project', project_id=self.submitted_project.id), follow_redirects=True)
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b'Cannot archive project with confirmed marks.', response.data)
-        db.session.refresh(self.project)
-        self.assertFalse(self.project.is_archived)
+        self.assertIn(b'Project archived successfully.', response.data)
+        db.session.refresh(self.submitted_project)
+        self.assertTrue(self.submitted_project.is_archived)
+
+    def test_prevents_archiving_project_after_submission_and_during_marking(self):
+        client = self.login(self.admin_user)
+        self.assertTrue(self.submitted_project.is_submitted)
+        self.assertFalse(self.submitted_project.is_archived)
+        response = client.post(url_for('project.archive_project', project_id=self.submitted_project.id),
+                               follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Cannot archive project after submission until marking is complete.', response.data)
+        db.session.refresh(self.submitted_project)
+        self.assertFalse(self.submitted_project.is_archived)
+
+        mark1 = ProjectMark(project_id=self.submitted_project.id, marker_id=self.supervisor_user.id, mark=90, finalised=True)
+        db.session.add(mark1)
+        db.session.commit()
+
+        response = client.post(url_for('project.archive_project', project_id=self.submitted_project.id),
+                               follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Cannot archive project after submission until marking is complete.', response.data)
+        db.session.refresh(self.submitted_project)
+        self.assertFalse(self.submitted_project.is_archived)
+
+        mark2 = ProjectMark(project_id=self.submitted_project.id, marker_id=self.inactive_supervisor_user.id, mark=85, finalised=True)
+        db.session.add(mark2)
+        db.session.commit()
+        response = client.post(url_for('project.archive_project', project_id=self.submitted_project.id), follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Project archived successfully.', response.data)
+        db.session.refresh(self.submitted_project)
+        self.assertTrue(self.submitted_project.is_archived)
+
 
 
 if __name__ == '__main__':

@@ -58,7 +58,7 @@ class User(db.Model):
                             Project.supervisor_id == self.id,
                             Project.student_id == self.id
                         )
-                ) if p.status != ProjectStatus.MARKS_CONFIRMED]
+                ) if p.status not in [ProjectStatus.ARCHIVED]]
 
     @hybrid_property
     def has_pending(self):

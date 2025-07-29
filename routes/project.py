@@ -206,8 +206,8 @@ def archive_project(project_id):
     if not current_user.is_admin:
         flash('Only admins can archive projects.', 'danger')
         return redirect(url_for('project.view_project', project_id=project_id))
-    if project.status == ProjectStatus.MARKS_CONFIRMED:
-        flash('Cannot archive project with confirmed marks.', 'danger')
+    if project.status not in [ProjectStatus.ACTIVE, ProjectStatus.MARKS_CONFIRMED]:
+        flash('Cannot archive project after submission until marking is complete.', 'danger')
         return redirect(url_for('project.view_project', project_id=project_id))
     project.archive()
     flash('Project archived successfully.', 'success')
