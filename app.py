@@ -10,8 +10,7 @@ from routes.project import project_bp
 
 CONFIG = {
     'SQLALCHEMY_DATABASE_URI': 'sqlite:///dissertations.db',
-    'SECRET_KEY': 'dev',
-    'FLASK_DEBUG': 1,
+    'SECRET_KEY': 'dev'
 }
 
 def create_app(config=None):
@@ -50,4 +49,4 @@ def create_app(config=None):
 
 if __name__ == "__main__":
     this_app = create_app()
-    this_app.run(debug=True)
+    this_app.run(debug=False)
