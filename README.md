@@ -38,3 +38,19 @@ The system follows a classic web architecture using Flask (MVC pattern), SQLite 
 Flask routes control user flow: students submit proposals, supervisors approve them and log meetings, and module leaders assign markers and oversee the cohort.
 
 The front-end uses Bootstrap modals for key interactions, maintaining a clean and responsive interface. Business logic is primarily enforced in the models, supporting data integrity and maintainability. The architecture is well-suited for extension, e.g., integrating file upload, notifications, or analytics.
+
+## Software Components and Licensing
+
+| Component        | 	Vendor                       | 	Version         | 	EOL               | License | 	Cost/Model | 
+|------------------|-------------------------------|------------------|--------------------|--------|-------------|
+| Python           | 	Python Software  Foundation  | 	3.9.23 - 3.13.5 | Oct 2025 - Oct 2029 | PSF	  | Free  | 
+| Flask            | 	Pallets Projects             | 	3.0.3           | Current            | BSD-3 | Free	 | 
+| SQLite           | 	D. R. Hipp (Public  Domain)	 | 3.49.2	        | --                 | Public | Free  |
+| SQLAlchemy       | 	SQLAlchemy Project           | 	2.0.x           | Active             | MIT	  | Free  |  
+| Flask-SQLAlchemy | 	Pallets Projects             | 	3.0.x	        | Active             | MIT	  | Free  |
+| Flask-Login      | 	Flask  ecosystem             | 	0.6.2           | Active             | MIT   | Free	  |
+| Werkzeug         | 	Pallets Projects             | 	2.3.x	        | Active             | BSD-3 | Free	  |
+| Jinja2           | 	Pallets Projects             | 	3.1.x	        | Active             | BSD-3 | Free	  | 
+| Bootstrap        | 	Open source  (GitHub)        | 	5.2.x	        | Active             | MIT	  | Free  | 
+
+The project uses the MIT License: permissive, compatible with all dependencies, and ideal for academic reuse or extension.
