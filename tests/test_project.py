@@ -112,7 +112,7 @@ class ProjectManipulation(unittest.TestCase):
             proposal_id=self.proposal2.id,
             student_id=self.student_user2.id,
             supervisor_id=self.supervisor_user.id,
-            submitted_datetime=datetime.utcnow()
+            submitted_datetime=datetime.now()
         )
         db.session.add(self.project)
         db.session.add(self.submitted_project)
@@ -411,7 +411,7 @@ class ProjectManipulation(unittest.TestCase):
     def test_returns_marking_status_when_at_least_one_mark_is_finalised(self):
         mark1 = ProjectMark(project_id=self.project.id, marker_id=self.supervisor_user.id, mark=80, finalised=True)
         mark2 = ProjectMark(project_id=self.project.id, marker_id=self.inactive_supervisor_user.id, mark=85)
-        self.project.submitted_datetime = datetime.utcnow()
+        self.project.submitted_datetime = datetime.now()
         db.session.add_all([mark1, mark2])
         db.session.commit()
         self.assertEqual(self.project.status, ProjectStatus.MARKING)
@@ -458,8 +458,8 @@ class ProjectManipulation(unittest.TestCase):
     def test_allows_supervisor_to_edit_meeting_details(self):
         meeting = Meeting(
             project_id=self.project.id,
-            meeting_start=datetime.utcnow(),
-            meeting_end=datetime.utcnow() + timedelta(hours=1),
+            meeting_start=datetime.now(),
+            meeting_end=datetime.now() + timedelta(hours=1),
             location="Room 101"
         )
         db.session.add(meeting)
@@ -478,8 +478,8 @@ class ProjectManipulation(unittest.TestCase):
     def test_prevents_student_from_editing_meeting_details(self):
         meeting = Meeting(
             project_id=self.project.id,
-            meeting_start=datetime.utcnow(),
-            meeting_end=datetime.utcnow() + timedelta(hours=1),
+            meeting_start=datetime.now(),
+            meeting_end=datetime.now() + timedelta(hours=1),
             location="Room 101"
         )
         db.session.add(meeting)
@@ -508,8 +508,8 @@ class ProjectManipulation(unittest.TestCase):
         db.session.commit()
         meeting = Meeting(
             project_id=self.project.id,
-            meeting_start=datetime.utcnow(),
-            meeting_end=datetime.utcnow() + timedelta(hours=1),
+            meeting_start=datetime.now(),
+            meeting_end=datetime.now() + timedelta(hours=1),
             location="Room 101"
         )
         db.session.add(meeting)
@@ -528,8 +528,8 @@ class ProjectManipulation(unittest.TestCase):
     def test_allows_admin_to_edit_meeting_details(self):
         meeting = Meeting(
             project_id=self.project.id,
-            meeting_start=datetime.utcnow(),
-            meeting_end=datetime.utcnow() + timedelta(hours=1),
+            meeting_start=datetime.now(),
+            meeting_end=datetime.now() + timedelta(hours=1),
             location="Room 101"
         )
         db.session.add(meeting)
@@ -548,8 +548,8 @@ class ProjectManipulation(unittest.TestCase):
     def test_deletes_meeting_successfully_when_authorized(self):
         meeting = Meeting(
             project_id=self.project.id,
-            meeting_start=datetime.utcnow(),
-            meeting_end=datetime.utcnow() + timedelta(hours=1),
+            meeting_start=datetime.now(),
+            meeting_end=datetime.now() + timedelta(hours=1),
             location="Room 101"
         )
         db.session.add(meeting)
@@ -563,8 +563,8 @@ class ProjectManipulation(unittest.TestCase):
     def test_prevents_deleting_meeting_when_not_authorized(self):
         meeting = Meeting(
             project_id=self.project.id,
-            meeting_start=datetime.utcnow(),
-            meeting_end=datetime.utcnow() + timedelta(hours=1),
+            meeting_start=datetime.now(),
+            meeting_end=datetime.now() + timedelta(hours=1),
             location="Room 101"
         )
         db.session.add(meeting)
@@ -643,8 +643,8 @@ class ProjectManipulation(unittest.TestCase):
     def test_creates_meeting_successfully_with_valid_data(self):
         client = self.login(self.supervisor_user)
         response = client.post(url_for('project.create_meeting', project_id=self.project.id), data={
-            'meeting_start': datetime.utcnow().isoformat(),
-            'meeting_end': (datetime.utcnow() + timedelta(hours=1)).strftime('%H:%M'),
+            'meeting_start': datetime.now().isoformat(),
+            'meeting_end': (datetime.now() + timedelta(hours=1)).strftime('%H:%M'),
             'location': 'Room 101'
         }, follow_redirects=True)
         self.assertEqual(response.status_code, 200)
@@ -656,8 +656,8 @@ class ProjectManipulation(unittest.TestCase):
     def test_prevents_meeting_creation_by_non_supervisor(self):
         client = self.login(self.student_user)
         response = client.post(url_for('project.create_meeting', project_id=self.project.id), data={
-            'meeting_start': datetime.utcnow().isoformat(),
-            'meeting_end': (datetime.utcnow() + timedelta(hours=1)).strftime('%H:%M'),
+            'meeting_start': datetime.now().isoformat(),
+            'meeting_end': (datetime.now() + timedelta(hours=1)).strftime('%H:%M'),
             'location': 'Room 101'
         }, follow_redirects=True)
         self.assertEqual(response.status_code, 200)
@@ -681,7 +681,7 @@ class ProjectManipulation(unittest.TestCase):
         client = self.login(self.supervisor_user)
         response = client.post(url_for('project.create_meeting', project_id=self.project.id), data={
             'meeting_start': 'invalid-date',
-            'meeting_end': (datetime.utcnow() + timedelta(hours=1)).strftime('%H:%M'),
+            'meeting_end': (datetime.now() + timedelta(hours=1)).strftime('%H:%M'),
             'location': 'Room 101'
         }, follow_redirects=True)
         self.assertEqual(response.status_code, 200)
@@ -692,7 +692,7 @@ class ProjectManipulation(unittest.TestCase):
     def test_prevents_meeting_creation_with_invalid_end_time_format(self):
         client = self.login(self.supervisor_user)
         response = client.post(url_for('project.create_meeting', project_id=self.project.id), data={
-            'meeting_start': datetime.utcnow().isoformat(),
+            'meeting_start': datetime.now().isoformat(),
             'meeting_end': 'invalid-time',
             'location': 'Room 101'
         }, follow_redirects=True)
@@ -704,8 +704,8 @@ class ProjectManipulation(unittest.TestCase):
     def test_prevents_meeting_creation_with_missing_location(self):
         client = self.login(self.supervisor_user)
         response = client.post(url_for('project.create_meeting', project_id=self.project.id), data={
-            'meeting_start': datetime.utcnow().isoformat(),
-            'meeting_end': (datetime.utcnow() + timedelta(hours=1)).strftime('%H:%M'),
+            'meeting_start': datetime.now().isoformat(),
+            'meeting_end': (datetime.now() + timedelta(hours=1)).strftime('%H:%M'),
             'location': ''
         }, follow_redirects=True)
         self.assertEqual(response.status_code, 200)
@@ -716,8 +716,8 @@ class ProjectManipulation(unittest.TestCase):
     def test_invalid_meeting_start_time_redirects_with_error(self):
         meeting = Meeting(
             project_id=self.project.id,
-            meeting_start=datetime.utcnow(),
-            meeting_end=datetime.utcnow() + timedelta(hours=1),
+            meeting_start=datetime.now(),
+            meeting_end=datetime.now() + timedelta(hours=1),
             location="Room 101"
         )
         db.session.add(meeting)
@@ -725,7 +725,7 @@ class ProjectManipulation(unittest.TestCase):
         client = self.login(self.supervisor_user)
         response = client.post(url_for('project.edit_meeting', meeting_id=meeting.id), data={
             'meeting_start': 'invalid-date',
-            'meeting_end': (datetime.utcnow() + timedelta(hours=1)).isoformat()
+            'meeting_end': (datetime.now() + timedelta(hours=1)).isoformat()
         }, follow_redirects=True)
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'Invalid meeting start time format:', response.data)
@@ -735,15 +735,15 @@ class ProjectManipulation(unittest.TestCase):
     def test_invalid_meeting_end_time_redirects_with_error(self):
         meeting = Meeting(
             project_id=self.project.id,
-            meeting_start=datetime.utcnow(),
-            meeting_end=datetime.utcnow() + timedelta(hours=1),
+            meeting_start=datetime.now(),
+            meeting_end=datetime.now() + timedelta(hours=1),
             location="Room 101"
         )
         db.session.add(meeting)
         db.session.commit()
         client = self.login(self.supervisor_user)
         response = client.post(url_for('project.edit_meeting', meeting_id=meeting.id), data={
-            'meeting_start': datetime.utcnow().isoformat(),
+            'meeting_start': datetime.now().isoformat(),
             'meeting_end': 'invalid-time'
         }, follow_redirects=True)
         self.assertEqual(response.status_code, 200)
@@ -754,15 +754,15 @@ class ProjectManipulation(unittest.TestCase):
     def test_valid_meeting_start_and_end_updates_successfully(self):
         meeting = Meeting(
             project_id=self.project.id,
-            meeting_start=datetime.utcnow(),
-            meeting_end=datetime.utcnow() + timedelta(hours=1),
+            meeting_start=datetime.now(),
+            meeting_end=datetime.now() + timedelta(hours=1),
             location="Room 101"
         )
         db.session.add(meeting)
         db.session.commit()
         client = self.login(self.supervisor_user)
-        new_start = (datetime.utcnow() + timedelta(days=1)).isoformat()
-        new_end = (datetime.utcnow() + timedelta(days=1, hours=1)).isoformat()
+        new_start = (datetime.now() + timedelta(days=1)).isoformat()
+        new_end = (datetime.now() + timedelta(days=1, hours=1)).isoformat()
         response = client.post(url_for('project.edit_meeting', meeting_id=meeting.id), data={
             'meeting_start': new_start,
             'meeting_end': new_end
@@ -776,8 +776,8 @@ class ProjectManipulation(unittest.TestCase):
     def test_handles_integrity_error_when_meeting_end_before_start(self):
         meeting = Meeting(
             project_id=self.project.id,
-            meeting_start=datetime.utcnow(),
-            meeting_end=datetime.utcnow() + timedelta(hours=1),
+            meeting_start=datetime.now(),
+            meeting_end=datetime.now() + timedelta(hours=1),
             location="Room 101"
         )
         db.session.add(meeting)
@@ -785,13 +785,13 @@ class ProjectManipulation(unittest.TestCase):
         with unittest.mock.patch.object(db.session, "commit", side_effect=IntegrityError("Integrity error", None, None)):
             client = self.login(self.supervisor_user)
             response = client.post(url_for('project.edit_meeting', meeting_id=meeting.id), data={
-                'meeting_start': datetime.utcnow().isoformat(),
-                'meeting_end': (datetime.utcnow() - timedelta(hours=1)).isoformat()
+                'meeting_start': datetime.now().isoformat(),
+                'meeting_end': (datetime.now() - timedelta(hours=1)).isoformat()
             }, follow_redirects=True)
             self.assertEqual(response.status_code, 200)
             self.assertIn(b"Integrity error. Meeting end time can not be before start time.", response.data)
             db.session.refresh(meeting)
-            self.assertNotEqual(meeting.meeting_end, datetime.utcnow() - timedelta(hours=1))
+            self.assertNotEqual(meeting.meeting_end, datetime.now() - timedelta(hours=1))
 
 
 if __name__ == '__main__':

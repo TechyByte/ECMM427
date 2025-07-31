@@ -113,11 +113,11 @@ class ProposalCreation(unittest.TestCase):
             Proposal(supervisor=self.student_user)
 
     def test_proposal_status_returns_accepted_when_accepted_date_is_set_and_rejected_date_is_none(self):
-        proposal = Proposal(accepted_date=datetime.utcnow(), rejected_date=None)
+        proposal = Proposal(accepted_date=datetime.now(), rejected_date=None)
         self.assertEqual(proposal.status, ProposalStatus.ACCEPTED)
 
     def test_proposal_status_returns_rejected_when_rejected_date_is_set(self):
-        proposal = Proposal(accepted_date=None, rejected_date=datetime.utcnow())
+        proposal = Proposal(accepted_date=None, rejected_date=datetime.now())
         self.assertEqual(proposal.status, ProposalStatus.REJECTED)
 
     def test_proposal_status_returns_pending_when_neither_accepted_nor_rejected_date_is_set(self):
@@ -125,7 +125,7 @@ class ProposalCreation(unittest.TestCase):
         self.assertEqual(proposal.status, ProposalStatus.PENDING)
 
     def test_proposal_status_returns_rejected_when_both_accepted_and_rejected_dates_are_set(self):
-        proposal = Proposal(accepted_date=datetime.utcnow(), rejected_date=datetime.utcnow())
+        proposal = Proposal(accepted_date=datetime.now(), rejected_date=datetime.now())
         self.assertEqual(proposal.status, ProposalStatus.REJECTED)
 
     def test_submits_proposal_successfully(self):
@@ -257,7 +257,7 @@ class ProposalCreation(unittest.TestCase):
             description="Description",
             student=self.student_user,
             supervisor=self.supervisor_user,
-            accepted_date=datetime.utcnow(),
+            accepted_date=datetime.now(),
             rejected_date=None
         )
         db.session.add(proposal)
@@ -326,7 +326,7 @@ class ProposalCreation(unittest.TestCase):
             description="Description",
             student=self.student_user,
             supervisor=self.supervisor_user,
-            accepted_date=datetime.utcnow(),
+            accepted_date=datetime.now(),
             rejected_date=None
         )
         db.session.add(proposal)

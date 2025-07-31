@@ -175,7 +175,7 @@ def submit_project(project_id):
     if project.status != ProjectStatus.ACTIVE:
         flash('Project cannot be submitted if project is not active.', 'danger')
         return redirect(url_for('project.view_project', project_id=project_id))
-    project.submitted_datetime = datetime.utcnow()
+    project.submitted_datetime = datetime.now()
     try:
         db.session.commit()
         flash('Project marked as submitted.', 'success')

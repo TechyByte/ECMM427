@@ -26,7 +26,7 @@ class Proposal(db.Model):
     student_id = db.Column(db.Integer, ForeignKey('user.id'), nullable=False)
     supervisor_id = db.Column(db.Integer, ForeignKey('user.id'), nullable=False)
 
-    created_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    created_date = db.Column(db.DateTime, nullable=False, default=datetime.now())
     accepted_date = db.Column(db.DateTime, nullable=True)
     rejected_date = db.Column(db.DateTime, nullable=True)
 
