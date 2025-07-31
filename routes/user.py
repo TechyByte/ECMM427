@@ -9,7 +9,7 @@ user_bp = Blueprint('user', __name__)
 
 def fao_supervisor(supervisor: User) -> ([Proposal],[Project],[Project]):
     pending_proposals = [p for p in Proposal.query.filter_by(supervisor_id=supervisor.id).all() if p.status == ProposalStatus.PENDING]
-    projects = [p for p in Project.query.filter_by(supervisor_id=supervisor.id).all() if p.status != ProjectStatus.ARCHIVED]
+    projects = [p for p in Project.query.filter_by(supervisor_id=supervisor.id).all() if p.status not in [ProjectStatus.MARKS_CONFIRMED, ProjectStatus.ARCHIVED]]
     marking_projects = [pm.project for pm in
                         ProjectMark.query.filter_by(marker_id=supervisor.id)
                         .join(Project)
