@@ -82,6 +82,9 @@ class Project(db.Model):
             return None
 
     def archive(self):
+        for mark in list(self.marks):
+            if not mark.finalised:
+                db.session.delete(mark)
         self.archived_datetime = db.func.now()
         db.session.commit()
 
