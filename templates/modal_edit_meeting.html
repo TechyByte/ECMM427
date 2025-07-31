@@ -8,6 +8,24 @@
         </div>
         <div class="modal-body">
           <div class="mb-3">
+            <label>Meeting Start:</label>
+            <span id="startText{{ meeting.id }}" class="editable-text" onclick="toggleInput('start', {{ meeting.id }})">
+              {{ meeting.meeting_start.strftime('%Y-%m-%d %H:%M') }}
+            </span>
+            <input type="datetime-local" name="meeting_start" id="startInput{{ meeting.id }}" class="form-control d-none"
+              value="{{ meeting.meeting_start.strftime('%Y-%m-%dT%H:%M') }}"
+              onblur="updateTextFromInput('start', {{ meeting.id }})">
+          </div>
+          <div class="mb-3">
+            <label>Meeting End:</label>
+            <span id="endText{{ meeting.id }}" class="editable-text" onclick="toggleInput('end', {{ meeting.id }})">
+              {{ meeting.meeting_end.strftime('%Y-%m-%d %H:%M') if meeting.meeting_end else '' }}
+            </span>
+            <input type="datetime-local" name="meeting_end" id="endInput{{ meeting.id }}" class="form-control d-none"
+              value="{{ meeting.meeting_end.strftime('%Y-%m-%dT%H:%M') if meeting.meeting_end else '' }}"
+              onblur="updateTextFromInput('end', {{ meeting.id }})">
+          </div>
+          <div class="mb-3">
             <label>Attendance:</label>
             <select name="attendance" class="form-select">
               <option value="1" {% if meeting.attendance %}selected{% endif %}>Attended</option>
@@ -26,3 +44,28 @@
     </form>
   </div>
 </div>
+<script>
+function toggleInput(field, id) {
+  document.getElementById(field + 'Text' + id).classList.add('d-none');
+  document.getElementById(field + 'Input' + id).classList.remove('d-none');
+  document.getElementById(field + 'Input' + id).focus();
+}
+function updateTextFromInput(field, id) {
+  var input = document.getElementById(field + 'Input' + id);
+  var text = document.getElementById(field + 'Text' + id);
+  input.classList.add('d-none');
+  text.classList.remove('d-none');
+  if (input.value) {
+    // Format as "YYYY-MM-DD HH:MM"
+    var dt = new Date(input.value);
+    if (!isNaN(dt.getTime())) {
+      var yyyy = dt.getFullYear();
+      var mm = String(dt.getMonth() + 1).padStart(2, '0');
+      var dd = String(dt.getDate()).padStart(2, '0');
+      var hh = String(dt.getHours()).padStart(2, '0');
+      var min = String(dt.getMinutes()).padStart(2, '0');
+      text.textContent = yyyy + '-' + mm + '-' + dd + ' ' + hh + ':' + min + ' (unsaved changes)';
+    }
+  }
+}
+</script>

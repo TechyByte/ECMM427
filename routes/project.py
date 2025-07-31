@@ -80,6 +80,23 @@ def edit_meeting(meeting_id):
     if current_user.id not in [project.supervisor_id] and not current_user.is_admin:
         flash('Not authorized.', 'danger')
         return redirect(url_for('project.view_project', project_id=meeting.project_id))
+
+    meeting_start = request.form.get('meeting_start')
+    if meeting_start:
+        try:
+            meeting.meeting_start = datetime.fromisoformat(meeting_start)
+        except ValueError as e:
+            flash(f'Invalid meeting start time format: {e}', 'danger')
+            return redirect(url_for('project.view_project', project_id=meeting.project_id))
+
+    meeting_end = request.form.get('meeting_end')
+    if meeting_end:
+        try:
+            meeting.meeting_end = datetime.fromisoformat(meeting_end)
+        except ValueError as e:
+            flash(f'Invalid meeting end time format: {e}', 'danger')
+            return redirect(url_for('project.view_project', project_id=meeting.project_id))
+
     meeting.attendance = bool(int(request.form.get('attendance', 0)))
     meeting.outcome_notes = request.form.get('outcome_notes')
     db.session.commit()
