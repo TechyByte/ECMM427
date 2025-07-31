@@ -2,6 +2,7 @@ from datetime import datetime
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
+from sqlalchemy.exc import IntegrityError
 
 from exceptions import NoConcordantProjectMarks
 from models import User
@@ -99,8 +100,12 @@ def edit_meeting(meeting_id):
 
     meeting.attendance = bool(int(request.form.get('attendance', 0)))
     meeting.outcome_notes = request.form.get('outcome_notes')
-    db.session.commit()
-    flash('Meeting updated.', 'success')
+    try:
+        db.session.commit()
+        flash('Meeting updated.', 'success')
+    except IntegrityError as e:
+        db.session.rollback()
+        flash(f"Integrity error. Meeting end time can not be before start time. {e}", "warning")
     return redirect(url_for('project.view_project', project_id=meeting.project_id))
 
 
