@@ -202,7 +202,7 @@ def add_marker(project_id):
     project.second_marker_id = int(add_marker_id)
     # Create ProjectMark for second marker if not already present
     from models.ProjectMark import ProjectMark
-    existing = ProjectMark.query.filter_by(project_id=project.id, marker_id=project.second_marker_id).first()
+    existing = ProjectMark.query.filter_by(project_id=project.id, marker_id=project.second_marker_id, finalised=0).first()
     if not existing:
         new_mark = ProjectMark(project_id=project.id, marker_id=project.second_marker_id)
         db.session.add(new_mark)
@@ -220,7 +220,7 @@ def remove_second_marker(project_id):
         return redirect(url_for('project.view_project', project_id=project_id))
     # Remove second marker and related marks
     project.second_marker_id = None
-    ProjectMark.query.filter_by(project_id=project.id).filter(ProjectMark.marker_id != project.supervisor_id).delete()
+    ProjectMark.query.filter_by(project_id=project.id).filter((ProjectMark.marker_id != project.supervisor_id) & (ProjectMark.finalised == 0)).delete()
     db.session.commit()
     flash('Second marker removed.', 'success')
     return redirect(url_for('project.view_project', project_id=project_id))
