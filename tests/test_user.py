@@ -321,3 +321,36 @@ class UserManipulation(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"New password must be at least 6 characters.", response.data)
         self.assertTrue(self.student_user.check_password("oldpassword"))
+
+    def test_redirects_authenticated_user_to_home(self):
+        client = self.login(self.student_user)
+        response = client.get(url_for('index'), follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Welcome', response.data)
+
+    def test_redirects_unauthenticated_user_to_login(self):
+        client = self.flask_app.test_client()
+        response = client.get(url_for('index'), follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Login', response.data)
+
+    def test_renders_admin_home_with_supervisor_data(self):
+        client = self.login(self.admin_user)
+        self.admin_user.is_supervisor = True
+        db.session.commit()
+        response = client.get(url_for('user.home'), follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Module Leader Dashboard', response.data)
+        self.assertIn(b'Admin Supervisor', response.data)
+        self.assertIn(b"You don\xe2\x80\x99t have any proposals or projects yet.", response.data)
+
+    def test_renders_admin_home_without_supervisor_data(self):
+        client = self.login(self.admin_user)
+        self.admin_user.is_supervisor = False
+        db.session.commit()
+        response = client.get(url_for('user.home'), follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Module Leader Dashboard', response.data)
+        self.assertIn(b'Admin', response.data)
+        self.assertNotIn(b'Admin Supervisor', response.data)
+        self.assertNotIn(b"You don\xe2\x80\x99t have any proposals or projects yet.", response.data)
