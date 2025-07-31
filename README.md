@@ -39,6 +39,10 @@ Flask routes control user flow: students submit proposals, supervisors approve t
 
 The front-end uses Bootstrap modals for key interactions, maintaining a clean and responsive interface. Business logic is primarily enforced in the models, supporting data integrity and maintainability. The architecture is well-suited for extension, e.g., integrating file upload, notifications, or analytics.
 
+## Legal and Ethical Considerations
+
+The system handles personal data, requiring GDPR-compliant processing. Role-based access ensures users can only view/alter relevant data.
+
 ## Software Components and Licensing
 
 | Component        | 	Vendor                       | 	Version         | 	EOL               | License | 	Cost/Model | 
@@ -54,3 +58,9 @@ The front-end uses Bootstrap modals for key interactions, maintaining a clean an
 | Bootstrap        | 	Open source  (GitHub)        | 	5.2.x	        | Active             | MIT	  | Free  | 
 
 The project uses the MIT License: permissive, compatible with all dependencies, and ideal for academic reuse or extension.
+
+## Team Development Considerations
+
+Developing this in a team would allow faster progress and more features, though requiring coordination. Work would be divided among UI, backend, database, and testing roles. A Scrum-based agile process would facilitate sprints and feedback loops. Git, code reviews, and task boards would support collaboration.
+
+Challenges like merge conflicts, interface integration, and consistency would be addressed through documentation, shared architecture, and peer review. A team could deliver better testing, accessibility, and UX.
