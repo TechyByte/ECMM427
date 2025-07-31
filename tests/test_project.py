@@ -6,6 +6,7 @@ import unittest.mock
 from datetime import datetime, timedelta
 
 import sqlalchemy
+from sqlalchemy.exc import IntegrityError
 from flask import url_for
 from flask.testing import FlaskClient
 
@@ -121,6 +122,7 @@ class ProjectManipulation(unittest.TestCase):
         db.session.commit()
 
     def tearDown(self):
+        db.session.remove()
         db.drop_all()
         self.app_context.pop()
         os.close(self.db_fd)
@@ -711,6 +713,85 @@ class ProjectManipulation(unittest.TestCase):
         meeting = Meeting.query.filter_by(project_id=self.project.id).first()
         self.assertIsNone(meeting)
 
+    def test_invalid_meeting_start_time_redirects_with_error(self):
+        meeting = Meeting(
+            project_id=self.project.id,
+            meeting_start=datetime.utcnow(),
+            meeting_end=datetime.utcnow() + timedelta(hours=1),
+            location="Room 101"
+        )
+        db.session.add(meeting)
+        db.session.commit()
+        client = self.login(self.supervisor_user)
+        response = client.post(url_for('project.edit_meeting', meeting_id=meeting.id), data={
+            'meeting_start': 'invalid-date',
+            'meeting_end': (datetime.utcnow() + timedelta(hours=1)).isoformat()
+        }, follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Invalid meeting start time format:', response.data)
+        db.session.refresh(meeting)
+        self.assertNotEqual(meeting.meeting_start, 'invalid-date')
+
+    def test_invalid_meeting_end_time_redirects_with_error(self):
+        meeting = Meeting(
+            project_id=self.project.id,
+            meeting_start=datetime.utcnow(),
+            meeting_end=datetime.utcnow() + timedelta(hours=1),
+            location="Room 101"
+        )
+        db.session.add(meeting)
+        db.session.commit()
+        client = self.login(self.supervisor_user)
+        response = client.post(url_for('project.edit_meeting', meeting_id=meeting.id), data={
+            'meeting_start': datetime.utcnow().isoformat(),
+            'meeting_end': 'invalid-time'
+        }, follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Invalid meeting end time format:', response.data)
+        db.session.refresh(meeting)
+        self.assertNotEqual(meeting.meeting_end, 'invalid-time')
+
+    def test_valid_meeting_start_and_end_updates_successfully(self):
+        meeting = Meeting(
+            project_id=self.project.id,
+            meeting_start=datetime.utcnow(),
+            meeting_end=datetime.utcnow() + timedelta(hours=1),
+            location="Room 101"
+        )
+        db.session.add(meeting)
+        db.session.commit()
+        client = self.login(self.supervisor_user)
+        new_start = (datetime.utcnow() + timedelta(days=1)).isoformat()
+        new_end = (datetime.utcnow() + timedelta(days=1, hours=1)).isoformat()
+        response = client.post(url_for('project.edit_meeting', meeting_id=meeting.id), data={
+            'meeting_start': new_start,
+            'meeting_end': new_end
+        }, follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Meeting updated.', response.data)
+        db.session.refresh(meeting)
+        self.assertEqual(meeting.meeting_start.isoformat(), new_start)
+        self.assertEqual(meeting.meeting_end.isoformat(), new_end)
+
+    def test_handles_integrity_error_when_meeting_end_before_start(self):
+        meeting = Meeting(
+            project_id=self.project.id,
+            meeting_start=datetime.utcnow(),
+            meeting_end=datetime.utcnow() + timedelta(hours=1),
+            location="Room 101"
+        )
+        db.session.add(meeting)
+        db.session.commit()
+        with unittest.mock.patch.object(db.session, "commit", side_effect=IntegrityError("Integrity error", None, None)):
+            client = self.login(self.supervisor_user)
+            response = client.post(url_for('project.edit_meeting', meeting_id=meeting.id), data={
+                'meeting_start': datetime.utcnow().isoformat(),
+                'meeting_end': (datetime.utcnow() - timedelta(hours=1)).isoformat()
+            }, follow_redirects=True)
+            self.assertEqual(response.status_code, 200)
+            self.assertIn(b"Integrity error. Meeting end time can not be before start time.", response.data)
+            db.session.refresh(meeting)
+            self.assertNotEqual(meeting.meeting_end, datetime.utcnow() - timedelta(hours=1))
 
 
 if __name__ == '__main__':
