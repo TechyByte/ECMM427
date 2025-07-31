@@ -98,8 +98,8 @@
     {% for mark in marks %}
         <tr>
             <td>{{ mark.marker.name }}</td>
-            <td>{% if mark.marker.id == current_user.id or (final_mark_is_ready and current_user.id == project.student_id )%}{{ mark.mark }}{% else %}hidden{% endif %}</td>
-            <td>{% if mark.marker.id == current_user.id or (final_mark_is_ready and current_user.id == project.student_id )%}{{ mark.feedback }}{% else %}hidden{% endif %}</td>
+            <td>{% if mark.marker.id == current_user.id or (final_mark_is_ready) or (current_user.is_admin and current_user.id not in [project.supervisor_id, project.second_marker_id]) %}{{ mark.mark }}{% else %}hidden{% endif %}</td>
+            <td>{% if mark.marker.id == current_user.id or (final_mark_is_ready) or (current_user.is_admin and current_user.id not in [project.supervisor_id, project.second_marker_id]) %}{{ mark.feedback }}{% else %}hidden{% endif %}</td>
             <td>{{ 'Yes' if mark.finalised else 'No' }}</td>
             <td>
                 {% if can_mark and mark.marker_id == current_user.id and not mark.finalised %}
