@@ -28,7 +28,7 @@ def create_app(config=None):
     @login_manager.user_loader
     def load_user(user_id):
         user = db.session.get(User, int(user_id))
-        return LoginUser(user) if user else None
+        return LoginUser(user) if user and user.active else None
 
     @app.route('/')
     def index():
