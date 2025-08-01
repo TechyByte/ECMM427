@@ -1,7 +1,7 @@
 from flask import flash
 from flask_login import UserMixin
 
-from sqlalchemy import and_, or_
+from sqlalchemy import or_
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship, validates
 from werkzeug.security import check_password_hash, generate_password_hash

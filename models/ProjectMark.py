@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship, validates
 from models.db import db

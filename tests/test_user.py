@@ -1,19 +1,12 @@
 import os
-import sqlite3
 import tempfile
 import unittest
 import unittest.mock
-from datetime import datetime
 
-import sqlalchemy
 from flask import url_for
 from flask.testing import FlaskClient
 
-from exceptions import InvalidStudent, InvalidSupervisor, MaxProposalsReachedError, NoConcordantProjectMarks
-
-from models import User, Proposal, Project, CatalogProposal, ProjectMark, Meeting
-from models.Proposal import ProposalStatus
-from models.Project import ProjectStatus
+from models import User
 
 from models.db import db
 
