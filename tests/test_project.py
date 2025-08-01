@@ -66,6 +66,16 @@ class ProjectManipulation(unittest.TestCase):
         self.supervisor_user.set_password("password")
         db.session.add(self.supervisor_user)
 
+        self.supervisor_user2 = User(
+            email="supervisor2@example.com",
+            name="Supervisor2 User",
+            is_supervisor=True,
+            is_admin=False,
+            active=True
+        )
+        self.supervisor_user2.set_password("password")
+        db.session.add(self.supervisor_user2)
+
         self.admin_user = User(
             email="admin@example.com",
             name="Admin User",
@@ -310,12 +320,12 @@ class ProjectManipulation(unittest.TestCase):
     def test_allows_second_marker_to_submit_concordant_mark(self):
         self.app_context.push()
         # Assign second marker
-        self.submitted_project.second_marker_id = self.inactive_supervisor_user.id
+        self.submitted_project.second_marker_id = self.supervisor_user2.id
         db.session.commit()
         # Add ProjectMark for second marker
         second_mark = ProjectMark(
             project_id=self.submitted_project.id,
-            marker_id=self.inactive_supervisor_user.id
+            marker_id=self.supervisor_user2.id
         )
         db.session.add(second_mark)
         db.session.commit()
@@ -329,7 +339,7 @@ class ProjectManipulation(unittest.TestCase):
         db.session.commit()
         self.assertTrue(self.submitted_project.is_submitted)
         # Second marker submits a concordant mark (within 5)
-        client = self.login(self.inactive_supervisor_user)
+        client = self.login(self.supervisor_user2)
         response = client.post(url_for('project.submit_mark', mark_id=second_mark.id), data={
             'grade': 84,
             'feedback': 'Concordant mark'
@@ -345,12 +355,12 @@ class ProjectManipulation(unittest.TestCase):
     def test_allows_second_marker_to_submit_non_concordant_mark_and_starts_new_round(self):
         self.app_context.push()
         # Assign second marker
-        self.submitted_project.second_marker_id = self.inactive_supervisor_user.id
+        self.submitted_project.second_marker_id = self.supervisor_user2.id
         db.session.commit()
         # Add ProjectMark for second marker
         second_mark = ProjectMark(
             project_id=self.submitted_project.id,
-            marker_id=self.inactive_supervisor_user.id
+            marker_id=self.supervisor_user2.id
         )
         db.session.add(second_mark)
         db.session.commit()
@@ -362,7 +372,7 @@ class ProjectManipulation(unittest.TestCase):
         supervisor_mark.mark = 80
         supervisor_mark.finalised = True
         db.session.commit()
-        client = self.login(self.inactive_supervisor_user)
+        client = self.login(self.supervisor_user2)
         response = client.post(url_for('project.submit_mark', mark_id=second_mark.id), data={
             'grade': 70,
             'feedback': 'Non-concordant mark'

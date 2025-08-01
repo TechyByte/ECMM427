@@ -1,6 +1,5 @@
-from datetime import datetime
 from flask import Flask, redirect, url_for
-from flask_login import LoginManager, login_required, current_user
+from flask_login import LoginManager, current_user
 from models.db import db
 from models import User, LoginUser
 from routes.auth import auth_bp
