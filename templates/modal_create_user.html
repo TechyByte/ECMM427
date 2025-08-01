@@ -1,66 +1,72 @@
-<div class="modal fade" id="createStudentModal" tabindex="-1" aria-labelledby="createStudentModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <form method="POST" action="{{ url_for('user.create_user') }}">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="createStudentModalLabel">Create New User</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <div class="mb-3">
-            <label class="form-label">Full Name
-                <input type="text" class="form-control" name="name" required>
-            </label>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Email Address
-                <input type="email" class="form-control" name="email" required>
-            </label>
-          </div>
-          <div class="mb-3">
-            <div class="input-group">
-              <label class="form-label">Temporary Password<input type="text" class="form-control" id="temporaryPassword" name="password" required></label>
-              <button class="btn btn-outline-secondary" type="button" id="copyPasswordBtn" title="Copy to clipboard">
-                Copy
-              </button>
+<div class="modal fade" id="createStudentModal" tabindex="-1" aria-labelledby="createStudentModalLabel"
+     aria-hidden="true">
+    <div class="modal-dialog">
+        <form method="POST" action="{{ url_for('user.create_user') }}">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createStudentModalLabel">Create New User</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Full Name
+                            <input type="text" class="form-control" name="name" required>
+                        </label>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email Address
+                            <input type="email" class="form-control" name="email" required>
+                        </label>
+                    </div>
+                    <div class="mb-3">
+                        <div class="input-group">
+                            <label class="form-label">Temporary Password<input type="text" class="form-control"
+                                                                               id="temporaryPassword" name="password"
+                                                                               required></label>
+                            <button class="btn btn-outline-secondary" type="button" id="copyPasswordBtn"
+                                    title="Copy to clipboard">
+                                Copy
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Role
+                            <select class="form-select" name="role" required>
+                                <option value="student">Student</option>
+                                <option value="supervisor">Supervisor</option>
+                            </select>
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success">Create User</button>
+                </div>
             </div>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Role
-                <select class="form-select" name="role" required>
-                  <option value="student">Student</option>
-                  <option value="supervisor">Supervisor</option>
-                </select>
-            </label>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="submit" class="btn btn-success">Create User</button>
-        </div>
-      </div>
-    </form>
-  </div>
+        </form>
+    </div>
 </div>
 <script>
-  function generatePassword() {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
-    let password = '';
-    for (let i = 0; i < 12; i++) {
-      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    function generatePassword() {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+        let password = '';
+        for (let i = 0; i < 12; i++) {
+            password += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return password;
     }
-    return password;
-  }
 
-  window.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('temporaryPassword').value = generatePassword();
+    window.addEventListener('DOMContentLoaded', function () {
+        document.getElementById('temporaryPassword').value = generatePassword();
 
-    document.getElementById('copyPasswordBtn').addEventListener('click', function() {
-      const passwordInput = document.getElementById('temporaryPassword');
-      passwordInput.select();
-      passwordInput.setSelectionRange(0, 99999); // For mobile devices
-      document.execCommand('copy');
-      this.textContent = 'Copied!';
-      setTimeout(() => { this.textContent = 'Copy'; }, 1200);
+        document.getElementById('copyPasswordBtn').addEventListener('click', function () {
+            const passwordInput = document.getElementById('temporaryPassword');
+            passwordInput.select();
+            passwordInput.setSelectionRange(0, 99999); // For mobile devices
+            document.execCommand('copy');
+            this.textContent = 'Copied!';
+            setTimeout(() => {
+                this.textContent = 'Copy';
+            }, 1200);
+        });
     });
-  });
 </script>

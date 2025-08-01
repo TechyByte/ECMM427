@@ -1,75 +1,81 @@
 <div class="modal fade" id="editMeetingModal{{ meeting.id }}" tabindex="-1">
-  <div class="modal-dialog">
-    <form method="post" action="{{ url_for('project.edit_meeting', meeting_id=meeting.id) }}">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Edit Meeting</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <div class="mb-3">
-            <label>Meeting Start:
-                <span id="startText{{ meeting.id }}" class="editable-text" onclick="toggleInput('start', {{ meeting.id }})">
+    <div class="modal-dialog">
+        <form method="post" action="{{ url_for('project.edit_meeting', meeting_id=meeting.id) }}">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Meeting</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label>Meeting Start:
+                            <span id="startText{{ meeting.id }}" class="editable-text"
+                                  onclick="toggleInput('start', {{ meeting.id }})">
                   {{ meeting.meeting_start.strftime('%Y-%m-%d %H:%M') }}
                 </span>
-                <input type="datetime-local" name="meeting_start" id="startInput{{ meeting.id }}" class="form-control d-none"
-                  value="{{ meeting.meeting_start.strftime('%Y-%m-%dT%H:%M') }}"
-                  onblur="updateTextFromInput('start', {{ meeting.id }})">
-            </label>
-          </div>
-          <div class="mb-3">
-            <label>Meeting End:
-                <span id="endText{{ meeting.id }}" class="editable-text" onclick="toggleInput('end', {{ meeting.id }})">
+                            <input type="datetime-local" name="meeting_start" id="startInput{{ meeting.id }}"
+                                   class="form-control d-none"
+                                   value="{{ meeting.meeting_start.strftime('%Y-%m-%dT%H:%M') }}"
+                                   onblur="updateTextFromInput('start', {{ meeting.id }})">
+                        </label>
+                    </div>
+                    <div class="mb-3">
+                        <label>Meeting End:
+                            <span id="endText{{ meeting.id }}" class="editable-text"
+                                  onclick="toggleInput('end', {{ meeting.id }})">
                   {{ meeting.meeting_end.strftime('%Y-%m-%d %H:%M') if meeting.meeting_end else '' }}
                 </span>
-                <input type="datetime-local" name="meeting_end" id="endInput{{ meeting.id }}" class="form-control d-none"
-                  value="{{ meeting.meeting_end.strftime('%Y-%m-%dT%H:%M') if meeting.meeting_end else '' }}"
-                  onblur="updateTextFromInput('end', {{ meeting.id }})">
-            </label>
-          </div>
-          <div class="mb-3">
-            <label>Attendance:
-                <select name="attendance" class="form-select">
-                  <option value="1" {% if meeting.attendance %}selected{% endif %}>Attended</option>
-                  <option value="0" {% if not meeting.attendance %}selected{% endif %}>Absent</option>
-                </select>
-            </label>
-          </div>
-          <div class="mb-3">
-            <label>Contact/Outcome Notes:
-                <textarea name="outcome_notes" class="form-control">{{ meeting.outcome_notes or '' }}</textarea>
-            </label>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="submit" class="btn btn-primary">Save</button>
-        </div>
-      </div>
-    </form>
-  </div>
+                            <input type="datetime-local" name="meeting_end" id="endInput{{ meeting.id }}"
+                                   class="form-control d-none"
+                                   value="{{ meeting.meeting_end.strftime('%Y-%m-%dT%H:%M') if meeting.meeting_end else '' }}"
+                                   onblur="updateTextFromInput('end', {{ meeting.id }})">
+                        </label>
+                    </div>
+                    <div class="mb-3">
+                        <label>Attendance:
+                            <select name="attendance" class="form-select">
+                                <option value="1" {% if meeting.attendance %}selected{% endif %}>Attended</option>
+                                <option value="0" {% if not meeting.attendance %}selected{% endif %}>Absent</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="mb-3">
+                        <label>Contact/Outcome Notes:
+                            <textarea name="outcome_notes"
+                                      class="form-control">{{ meeting.outcome_notes or '' }}</textarea>
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </div>
+        </form>
+    </div>
 </div>
 <script>
-function toggleInput(field, id) {
-  document.getElementById(field + 'Text' + id).classList.add('d-none');
-  document.getElementById(field + 'Input' + id).classList.remove('d-none');
-  document.getElementById(field + 'Input' + id).focus();
-}
-function updateTextFromInput(field, id) {
-  let input = document.getElementById(field + 'Input' + id);
-  let text = document.getElementById(field + 'Text' + id);
-  input.classList.add('d-none');
-  text.classList.remove('d-none');
-  if (input.value) {
-    // Format as "YYYY-MM-DD HH:MM"
-    let dt = new Date(input.value);
-    if (!isNaN(dt.getTime())) {
-      let yyyy = dt.getFullYear();
-      let mm = String(dt.getMonth() + 1).padStart(2, '0');
-      let dd = String(dt.getDate()).padStart(2, '0');
-      let hh = String(dt.getHours()).padStart(2, '0');
-      let min = String(dt.getMinutes()).padStart(2, '0');
-      text.textContent = yyyy + '-' + mm + '-' + dd + ' ' + hh + ':' + min + ' (unsaved changes)';
+    function toggleInput(field, id) {
+        document.getElementById(field + 'Text' + id).classList.add('d-none');
+        document.getElementById(field + 'Input' + id).classList.remove('d-none');
+        document.getElementById(field + 'Input' + id).focus();
     }
-  }
-}
+
+    function updateTextFromInput(field, id) {
+        let input = document.getElementById(field + 'Input' + id);
+        let text = document.getElementById(field + 'Text' + id);
+        input.classList.add('d-none');
+        text.classList.remove('d-none');
+        if (input.value) {
+            // Format as "YYYY-MM-DD HH:MM"
+            let dt = new Date(input.value);
+            if (!isNaN(dt.getTime())) {
+                let yyyy = dt.getFullYear();
+                let mm = String(dt.getMonth() + 1).padStart(2, '0');
+                let dd = String(dt.getDate()).padStart(2, '0');
+                let hh = String(dt.getHours()).padStart(2, '0');
+                let min = String(dt.getMinutes()).padStart(2, '0');
+                text.textContent = yyyy + '-' + mm + '-' + dd + ' ' + hh + ':' + min + ' (unsaved changes)';
+            }
+        }
+    }
 </script>

@@ -14,6 +14,7 @@ from models.db import db
 
 project_bp = Blueprint('project', __name__)
 
+
 @project_bp.route('/project/<int:project_id>', methods=['GET'])
 @login_required
 def view_project(project_id):
@@ -30,10 +31,14 @@ def view_project(project_id):
             'second_marker' if current_user.id == project.second_marker_id else (
                 'admin' if current_user.is_admin else 'other')))
     can_create_meeting = user_role == 'supervisor'
-    can_mark = user_role in ['supervisor', 'second_marker'] and project.status in [ProjectStatus.SUBMITTED, ProjectStatus.MARKING]
+    can_mark = user_role in ['supervisor', 'second_marker'] and project.status in [ProjectStatus.SUBMITTED,
+                                                                                   ProjectStatus.MARKING]
     can_submit = user_role == 'student' and project.status == ProjectStatus.ACTIVE
     supervisors = User.query.filter_by(is_supervisor=True, active=True).all()
-    return render_template('project.html', project=project, meetings=meetings, marks=marks, user_role=user_role, can_create_meeting=can_create_meeting, can_mark=can_mark, can_submit=can_submit, final_mark_is_ready=final_mark_is_ready, supervisors=supervisors)
+    return render_template('project.html', project=project, meetings=meetings, marks=marks, user_role=user_role,
+                           can_create_meeting=can_create_meeting, can_mark=can_mark, can_submit=can_submit,
+                           final_mark_is_ready=final_mark_is_ready, supervisors=supervisors)
+
 
 @project_bp.route('/project/<int:project_id>/create_meeting', methods=['POST'])
 @login_required
@@ -71,6 +76,7 @@ def create_meeting(project_id):
     db.session.commit()
     flash('Meeting created.', 'success')
     return redirect(url_for('project.view_project', project_id=project_id))
+
 
 @project_bp.route('/meeting/<int:meeting_id>/edit', methods=['POST'])
 @login_required
@@ -123,6 +129,7 @@ def delete_meeting(meeting_id):
     flash('Meeting deleted.', 'success')
     return redirect(url_for('project.view_project', project_id=meeting.project_id))
 
+
 @project_bp.route('/mark/<int:mark_id>/submit', methods=['POST'])
 @login_required
 def submit_mark(mark_id):
@@ -165,6 +172,7 @@ def submit_mark(mark_id):
 
     return redirect(url_for('project.view_project', project_id=project.id))
 
+
 @project_bp.route('/project/<int:project_id>/submit', methods=['POST'])
 @login_required
 def submit_project(project_id):
@@ -184,6 +192,7 @@ def submit_project(project_id):
         flash(f'Error submitting project: {e}', 'danger')
     return redirect(url_for('project.view_project', project_id=project_id))
 
+
 @project_bp.route('/project/<int:project_id>/add_marker', methods=['POST'])
 @login_required
 def add_marker(project_id):
@@ -202,7 +211,8 @@ def add_marker(project_id):
     project.second_marker_id = int(add_marker_id)
     # Create ProjectMark for second marker if not already present
     from models.ProjectMark import ProjectMark
-    existing = ProjectMark.query.filter_by(project_id=project.id, marker_id=project.second_marker_id, finalised=0).first()
+    existing = ProjectMark.query.filter_by(project_id=project.id, marker_id=project.second_marker_id,
+                                           finalised=0).first()
     if not existing:
         new_mark = ProjectMark(project_id=project.id, marker_id=project.second_marker_id)
         db.session.add(new_mark)
@@ -220,10 +230,12 @@ def remove_second_marker(project_id):
         return redirect(url_for('project.view_project', project_id=project_id))
     # Remove second marker and related marks
     project.second_marker_id = None
-    ProjectMark.query.filter_by(project_id=project.id).filter((ProjectMark.marker_id != project.supervisor_id) & (ProjectMark.finalised == 0)).delete()
+    ProjectMark.query.filter_by(project_id=project.id).filter(
+        (ProjectMark.marker_id != project.supervisor_id) & (ProjectMark.finalised == 0)).delete()
     db.session.commit()
     flash('Second marker removed.', 'success')
     return redirect(url_for('project.view_project', project_id=project_id))
+
 
 @project_bp.route('/project/<int:project_id>/archive', methods=['POST'])
 @login_required

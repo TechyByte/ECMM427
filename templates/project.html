@@ -1,19 +1,23 @@
 {% extends 'base.html' %}
 {% block content %}
-<h2>Project: {{ project.proposal.title }}</h2>
-<p><strong>Description:</strong> {{ project.proposal.description }}</p>
-<p><strong>Student:</strong> {{ project.student.name }} | <strong>Supervisor:</strong> {{ project.supervisor.name }}{% if project.second_marker %} | <strong>Second Marker:</strong> {{ project.second_marker.name }}{% endif %}</p>
-<p><strong>Status:</strong> {{ project.status.value if project.status else 'N/A' }}
+    <h2>Project: {{ project.proposal.title }}</h2>
+    <p><strong>Description:</strong> {{ project.proposal.description }}</p>
+    <p><strong>Student:</strong> {{ project.student.name }} | <strong>Supervisor:</strong>
+        {{ project.supervisor.name }}{% if project.second_marker %} | <strong>Second Marker:</strong>
+            {{ project.second_marker.name }}{% endif %}</p>
+    <p><strong>Status:</strong> {{ project.status.value if project.status else 'N/A' }}
 
 
-{% if project.is_submitted %}
- on {{ project.submitted_datetime.strftime('%Y-%m-%d %H:%M') if project.submitted_datetime else 'Not submitted' }}</p>
-{% endif %}
-{% if can_submit and not project.is_submitted and current_user.id == project.student_id %}
-<form method="post" action="{{ url_for('project.submit_project', project_id=project.id) }}">
-    <button class="btn btn-warning">Mark as Submitted</button>
-</form>
-{% endif %}
+        {% if project.is_submitted %}
+            on
+            {{ project.submitted_datetime.strftime('%Y-%m-%d %H:%M') if project.submitted_datetime else 'Not submitted' }}
+            </p>
+        {% endif %}
+    {% if can_submit and not project.is_submitted and current_user.id == project.student_id %}
+        <form method="post" action="{{ url_for('project.submit_project', project_id=project.id) }}">
+            <button class="btn btn-warning">Mark as Submitted</button>
+        </form>
+    {% endif %}
 
     {% if current_user.is_admin and not project.is_archived %}
         <form method="post" action="{{ url_for('project.archive_project', project_id=project.id) }}">
@@ -22,70 +26,77 @@
     {% endif %}
 
 
-<hr>
-    {%  if meetings %}
-<h3>Meetings</h3>
+    <hr>
+    {% if meetings %}
+        <h3>Meetings</h3>
     {% endif %}
-{% if can_create_meeting %}
-<button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createMeetingModal">Create Meeting</button>
-{% endif %}
-{%  if meetings %}
-<table class="table mt-3">
-    <thead>
-        <tr>
-            <th>Date</th>
-            <th>Start</th>
-            <th>End</th>
-            <th>Location</th>
-            <th>Attendance</th>
-            <th>Contact/Outcome</th>
-            {% if can_create_meeting %}<th>Actions</th>{% endif %}
-        </tr>
-    </thead>
-    <tbody>
-    {% for meeting in meetings %}
-        <tr>
-            <td>{{ meeting.meeting_start.strftime('%Y-%m-%d') }}</td>
-            <td>{{ meeting.meeting_start.strftime('%H:%M') }}</td>
-            <td>{{ meeting.meeting_end.strftime('%H:%M') if meeting.meeting_end else '' }}</td>
-            <td>{{ meeting.location or 'unspecified' }}</td>
-            <td>
-                {% if meeting.has_started or meeting.attendance %}
-                    {{ 'Yes' if meeting.attendance else 'No' }}
-                {% else %}
-                    <span class="text-muted">tbc</span>
-                {% endif %}
-            </td>
-            <td>
-                {% if meeting.has_started or meeting.outcome_notes %}
-                    {{ meeting.outcome_notes }}
-                {% else %}
-                    <span class="text-muted">blank</span>
-                {% endif %}
-            </td>
-            {% if can_create_meeting %}
-                <td>
-                    <button class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#editMeetingModal{{ meeting.id }}">Edit</button>
-                    <form method="post" action="{{ url_for('project.delete_meeting', meeting_id=meeting.id) }}" style="display:inline;">
-                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this meeting?');">Delete</button>
-                    </form>
-                </td>
-            {% endif %}
-        </tr>
-        {# Edit Meeting Modal #}
-        {% include "modal_edit_meeting.html" with context %}
-    {% endfor %}
-    </tbody>
-</table>
+    {% if can_create_meeting %}
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createMeetingModal">Create Meeting
+        </button>
+    {% endif %}
+    {% if meetings %}
+        <table class="table mt-3">
+            <thead>
+            <tr>
+                <th>Date</th>
+                <th>Start</th>
+                <th>End</th>
+                <th>Location</th>
+                <th>Attendance</th>
+                <th>Contact/Outcome</th>
+                {% if can_create_meeting %}
+                    <th>Actions</th>{% endif %}
+            </tr>
+            </thead>
+            <tbody>
+            {% for meeting in meetings %}
+                <tr>
+                    <td>{{ meeting.meeting_start.strftime('%Y-%m-%d') }}</td>
+                    <td>{{ meeting.meeting_start.strftime('%H:%M') }}</td>
+                    <td>{{ meeting.meeting_end.strftime('%H:%M') if meeting.meeting_end else '' }}</td>
+                    <td>{{ meeting.location or 'unspecified' }}</td>
+                    <td>
+                        {% if meeting.has_started or meeting.attendance %}
+                            {{ 'Yes' if meeting.attendance else 'No' }}
+                        {% else %}
+                            <span class="text-muted">tbc</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if meeting.has_started or meeting.outcome_notes %}
+                            {{ meeting.outcome_notes }}
+                        {% else %}
+                            <span class="text-muted">blank</span>
+                        {% endif %}
+                    </td>
+                    {% if can_create_meeting %}
+                        <td>
+                            <button class="btn btn-sm btn-secondary" data-bs-toggle="modal"
+                                    data-bs-target="#editMeetingModal{{ meeting.id }}">Edit
+                            </button>
+                            <form method="post" action="{{ url_for('project.delete_meeting', meeting_id=meeting.id) }}"
+                                  style="display:inline;">
+                                <button type="submit" class="btn btn-sm btn-danger"
+                                        onclick="return confirm('Delete this meeting?');">Delete
+                                </button>
+                            </form>
+                        </td>
+                    {% endif %}
+                </tr>
+                {# Edit Meeting Modal #}
+                {% include "modal_edit_meeting.html" with context %}
+            {% endfor %}
+            </tbody>
+        </table>
     {% endif %}
 
-{# Create Meeting Modal #}
-{% include "modal_create_meeting.html" with context %}
+    {# Create Meeting Modal #}
+    {% include "modal_create_meeting.html" with context %}
 
-<hr>
-<h3>Marking</h3>
-<table class="table">
-    <thead>
+    <hr>
+    <h3>Marking</h3>
+    <table class="table">
+        <thead>
         <tr>
             <th>Marker</th>
             <th>Grade</th>
@@ -93,69 +104,81 @@
             <th>Finalised</th>
             <th>Actions</th>
         </tr>
-    </thead>
-    <tbody>
-    {% for mark in marks %}
-        <tr>
-            <td>{{ mark.marker.name }}</td>
-            <td>{% if mark.marker.id == current_user.id or (final_mark_is_ready) or (current_user.is_admin and current_user.id not in [project.supervisor_id, project.second_marker_id]) %}{{ mark.mark }}{% else %}hidden{% endif %}</td>
-            <td>{% if mark.marker.id == current_user.id or (final_mark_is_ready) or (current_user.is_admin and current_user.id not in [project.supervisor_id, project.second_marker_id]) %}{{ mark.feedback }}{% else %}hidden{% endif %}</td>
-            <td>{{ 'Yes' if mark.finalised else 'No' }}</td>
-            <td>
-                {% if can_mark and mark.marker_id == current_user.id and not mark.finalised %}
-                <button class="btn btn-sm btn{% if not project.is_submitted %}-outline{% endif %}-primary" data-bs-toggle="modal" data-bs-target="#markModal{{ mark.id }}" {% if not project.is_submitted %}disabled{% endif %}>Submit Mark</button>
-                {% endif %}
-                {% if current_user.is_admin and project.second_marker_id and (not mark.finalised) and mark.marker_id != project.supervisor_id %}
-                  <form method="POST" action="{{ url_for('project.remove_second_marker', project_id=project.id) }}" style="display:inline;">
-                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Remove marker?');">
-                      Remove
-                    </button>
-                  </form>
-                {% endif %}
-            </td>
-        </tr>
-        {# Mark Modal #}
-        {% include "modal_mark_project.html" with context %}
-    {% endfor %}
-    </tbody>
-</table>
+        </thead>
+        <tbody>
+        {% for mark in marks %}
+            <tr>
+                <td>{{ mark.marker.name }}</td>
+                <td>
+                    {% if mark.marker.id == current_user.id or (final_mark_is_ready) or (current_user.is_admin and current_user.id not in [project.supervisor_id, project.second_marker_id]) %}
+                        {{ mark.mark }}{% else %}hidden{% endif %}</td>
+                <td>
+                    {% if mark.marker.id == current_user.id or (final_mark_is_ready) or (current_user.is_admin and current_user.id not in [project.supervisor_id, project.second_marker_id]) %}
+                        {{ mark.feedback }}{% else %}hidden{% endif %}</td>
+                <td>{{ 'Yes' if mark.finalised else 'No' }}</td>
+                <td>
+                    {% if can_mark and mark.marker_id == current_user.id and not mark.finalised %}
+                        <button class="btn btn-sm btn{% if not project.is_submitted %}-outline{% endif %}-primary"
+                                data-bs-toggle="modal" data-bs-target="#markModal{{ mark.id }}"
+                                {% if not project.is_submitted %}disabled{% endif %}>Submit Mark
+                        </button>
+                    {% endif %}
+                    {% if current_user.is_admin and project.second_marker_id and (not mark.finalised) and mark.marker_id != project.supervisor_id %}
+                        <form method="POST"
+                              action="{{ url_for('project.remove_second_marker', project_id=project.id) }}"
+                              style="display:inline;">
+                            <button type="submit" class="btn btn-danger btn-sm"
+                                    onclick="return confirm('Remove marker?');">
+                                Remove
+                            </button>
+                        </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {# Mark Modal #}
+            {% include "modal_mark_project.html" with context %}
+        {% endfor %}
+        </tbody>
+    </table>
 
-{% if final_mark_is_ready %}
-<p><strong>Final Grade:</strong> {{ project.get_final_mark() }}</p>
-{% endif %}
+    {% if final_mark_is_ready %}
+        <p><strong>Final Grade:</strong> {{ project.get_final_mark() }}</p>
+    {% endif %}
 
-{# Add Second Marker Button for Admin if odd number of marks #}
-{% if (project.second_marker_id == None or project.marks|length % 2 != 0) and current_user.is_admin and not project.is_archived %}
-  <button class="btn btn-warning mt-3" data-bs-toggle="modal" data-bs-target="#addMarkerModal">Add Additional Marker</button>
-    {# Add Second Marker Modal #}
-  <div class="modal fade" id="addMarkerModal" tabindex="-1">
-    <div class="modal-dialog">
-      <form method="post" action="{{ url_for('project.add_marker', project_id=project.id) }}">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">Assign Second Marker</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            <div class="mb-3">
-              <label for="add_marker_id">Select additional marker:
-                  <select name="add_marker_id" class="form-select" required>
-                    {% for supervisor in supervisors %}
-                      {% if supervisor.id != project.supervisor_id %}
-                        <option value="{{ supervisor.id }}">{{ supervisor.name }}</option>
-                      {% endif %}
-                    {% endfor %}
-                  </select>
-              </label>
+    {# Add Second Marker Button for Admin if odd number of marks #}
+    {% if (project.second_marker_id == None or project.marks|length % 2 != 0) and current_user.is_admin and not project.is_archived %}
+        <button class="btn btn-warning mt-3" data-bs-toggle="modal" data-bs-target="#addMarkerModal">Add Additional
+            Marker
+        </button>
+        {# Add Second Marker Modal #}
+        <div class="modal fade" id="addMarkerModal" tabindex="-1">
+            <div class="modal-dialog">
+                <form method="post" action="{{ url_for('project.add_marker', project_id=project.id) }}">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Assign Second Marker</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="add_marker_id">Select additional marker:
+                                    <select name="add_marker_id" class="form-select" required>
+                                        {% for supervisor in supervisors %}
+                                            {% if supervisor.id != project.supervisor_id %}
+                                                <option value="{{ supervisor.id }}">{{ supervisor.name }}</option>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </select>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-success">Assign</button>
+                        </div>
+                    </div>
+                </form>
             </div>
-          </div>
-          <div class="modal-footer">
-            <button type="submit" class="btn btn-success">Assign</button>
-          </div>
         </div>
-      </form>
-    </div>
-  </div>
-{% endif %}
+    {% endif %}
 {% endblock %}
 

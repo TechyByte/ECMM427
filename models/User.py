@@ -48,26 +48,26 @@ class User(db.Model):
     @hybrid_property
     def has_unmarked(self):
         return ProjectMark.query.filter(
-                (ProjectMark.marker_id == self.id) & (ProjectMark.finalised == False)
-                ).first()
+            (ProjectMark.marker_id == self.id) & (ProjectMark.finalised == False)
+        ).first()
 
     @hybrid_property
     def has_ongoing_project(self):
         return [p for p in Project.query.join(Proposal).filter(
-                        or_(
-                            Project.supervisor_id == self.id,
-                            Project.student_id == self.id
-                        )
-                ) if p.status not in [ProjectStatus.ARCHIVED]]
+            or_(
+                Project.supervisor_id == self.id,
+                Project.student_id == self.id
+            )
+        ) if p.status not in [ProjectStatus.ARCHIVED]]
 
     @hybrid_property
     def has_pending(self):
         return [p for p in Proposal.query.filter(
-                or_(
-                        Proposal.supervisor_id == self.id,
-                        Proposal.student_id == self.id
-                    )
-                ) if p.status == ProposalStatus.PENDING]
+            or_(
+                Proposal.supervisor_id == self.id,
+                Proposal.student_id == self.id
+            )
+        ) if p.status == ProposalStatus.PENDING]
 
     @validates('active')
     def validate_active_status(self, key, value: bool):
@@ -132,4 +132,3 @@ class LoginUser(UserMixin):
     @property
     def obj(self):
         return self._user
-

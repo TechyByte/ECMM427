@@ -4,6 +4,7 @@ from sqlalchemy.orm import relationship, validates
 from exceptions import ActiveUserError, InvalidSupervisor
 from models.db import db
 
+
 class CatalogProposal(db.Model):
     __tablename__ = 'catalog_proposal'
 

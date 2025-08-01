@@ -7,6 +7,7 @@ from models import db, User, Project, Proposal, CatalogProposal, ProjectMark
 
 proposal_bp = Blueprint('proposal', __name__)
 
+
 @proposal_bp.route("/submit_proposal", methods=["POST"])
 @login_required
 def submit_proposal():
@@ -22,7 +23,8 @@ def submit_proposal():
     title = request.form.get("title")
     description = request.form.get("description")
     catalog_id = request.form.get("catalog_id")
-    supervisor_id = request.form.get("supervisor_id") if not catalog_id else None  # ignore supervisor if catalog is used
+    supervisor_id = request.form.get(
+        "supervisor_id") if not catalog_id else None  # ignore supervisor if catalog is used
 
     catalog_proposal = CatalogProposal.query.get_or_404(catalog_id) if catalog_id else None
 
@@ -50,6 +52,7 @@ def submit_proposal():
         flash(f"Error: {e}", "error")
 
     return redirect(url_for("user.home"))
+
 
 @proposal_bp.route("/action/<int:proposal_id>", methods=["POST"])
 @login_required
@@ -108,8 +111,10 @@ def withdraw_proposal(proposal_id):
 @proposal_bp.route('/catalog', methods=['GET'])
 @login_required
 def view_catalog():
-    catalog = CatalogProposal.query.join(User).filter(User.is_supervisor == True, CatalogProposal.active == True, User.active == True).all()
+    catalog = CatalogProposal.query.join(User).filter(User.is_supervisor == True, CatalogProposal.active == True,
+                                                      User.active == True).all()
     return render_template("catalog.html", catalog=catalog, supervisors=User.get_active_supervisors())
+
 
 @proposal_bp.route('/create_catalog_proposal', methods=['POST'])
 @login_required
@@ -137,6 +142,7 @@ def create_catalog_proposal():
         db.session.rollback()
         flash(f'Error creating catalog proposal: {e}', 'danger')
     return redirect(url_for('proposal.view_catalog'))
+
 
 @proposal_bp.route('/deactivate_catalog_proposal/<int:proposal_id>', methods=['POST'])
 @login_required

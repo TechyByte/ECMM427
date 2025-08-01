@@ -4,7 +4,6 @@ import unittest
 import unittest.mock
 from datetime import datetime, timedelta
 
-
 from sqlalchemy.exc import IntegrityError
 from flask import url_for
 from flask.testing import FlaskClient
@@ -177,7 +176,8 @@ class ProjectManipulation(unittest.TestCase):
 
     def test_prevents_assigning_second_marker_without_selection(self):
         client = self.login(self.admin_user)
-        response = client.post(url_for('project.add_marker', project_id=self.project.id), data={}, follow_redirects=True)
+        response = client.post(url_for('project.add_marker', project_id=self.project.id), data={},
+                               follow_redirects=True)
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'No second marker selected.', response.data)
         self.assertIsNone(self.project.second_marker_id)
@@ -195,7 +195,8 @@ class ProjectManipulation(unittest.TestCase):
     def test_prevents_student_from_submitting_already_submitted_project(self):
         self.assertIsNotNone(self.submitted_project.submitted_datetime)
         client = self.login(self.student_user2)
-        response = client.post(url_for('project.submit_project', project_id=self.submitted_project.id), follow_redirects=True)
+        response = client.post(url_for('project.submit_project', project_id=self.submitted_project.id),
+                               follow_redirects=True)
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'Project cannot be submitted if project is not active.', response.data)
         self.assertIsNotNone(self.submitted_project.submitted_datetime)
@@ -217,7 +218,8 @@ class ProjectManipulation(unittest.TestCase):
             self.assertIsNone(self.project.submitted_datetime)
 
     def test_allows_supervisor_to_submit_mark_for_submitted_project(self):
-        mark = ProjectMark.query.filter_by(project_id=self.submitted_project.id, marker_id=self.supervisor_user.id).first()
+        mark = ProjectMark.query.filter_by(project_id=self.submitted_project.id,
+                                           marker_id=self.supervisor_user.id).first()
         client = self.login(self.supervisor_user)
         response = client.post(url_for('project.submit_mark', mark_id=mark.id), data={
             'grade': 85,
@@ -437,7 +439,8 @@ class ProjectManipulation(unittest.TestCase):
         self.project.second_marker_id = self.inactive_supervisor_user.id
         db.session.commit()
         client = self.login(self.admin_user)
-        response = client.post(url_for('project.remove_second_marker', project_id=self.project.id), follow_redirects=True)
+        response = client.post(url_for('project.remove_second_marker', project_id=self.project.id),
+                               follow_redirects=True)
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'Second marker removed.', response.data)
         db.session.refresh(self.project)
@@ -447,7 +450,8 @@ class ProjectManipulation(unittest.TestCase):
         self.project.second_marker_id = self.inactive_supervisor_user.id
         db.session.commit()
         client = self.login(self.student_user)
-        response = client.post(url_for('project.remove_second_marker', project_id=self.project.id), follow_redirects=True)
+        response = client.post(url_for('project.remove_second_marker', project_id=self.project.id),
+                               follow_redirects=True)
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'Only admins can remove the second marker.', response.data)
         db.session.refresh(self.project)
@@ -457,7 +461,8 @@ class ProjectManipulation(unittest.TestCase):
         self.project.second_marker_id = None
         db.session.commit()
         client = self.login(self.admin_user)
-        response = client.post(url_for('project.remove_second_marker', project_id=self.project.id), follow_redirects=True)
+        response = client.post(url_for('project.remove_second_marker', project_id=self.project.id),
+                               follow_redirects=True)
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'Second marker removed.', response.data)
         db.session.refresh(self.project)
@@ -607,11 +612,14 @@ class ProjectManipulation(unittest.TestCase):
     def test_allows_archiving_project_with_confirmed_marks(self):
         client = self.login(self.admin_user)
         # Ensure the project has confirmed marks
-        mark1 = ProjectMark(project_id=self.submitted_project.id, marker_id=self.supervisor_user.id, mark=90, finalised=True)
-        mark2 = ProjectMark(project_id=self.submitted_project.id, marker_id=self.inactive_supervisor_user.id, mark=85, finalised=True)
+        mark1 = ProjectMark(project_id=self.submitted_project.id, marker_id=self.supervisor_user.id, mark=90,
+                            finalised=True)
+        mark2 = ProjectMark(project_id=self.submitted_project.id, marker_id=self.inactive_supervisor_user.id, mark=85,
+                            finalised=True)
         db.session.add_all([mark1, mark2])
         db.session.commit()
-        response = client.post(url_for('project.archive_project', project_id=self.submitted_project.id), follow_redirects=True)
+        response = client.post(url_for('project.archive_project', project_id=self.submitted_project.id),
+                               follow_redirects=True)
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'Project archived successfully.', response.data)
         db.session.refresh(self.submitted_project)
@@ -628,7 +636,8 @@ class ProjectManipulation(unittest.TestCase):
         db.session.refresh(self.submitted_project)
         self.assertFalse(self.submitted_project.is_archived)
 
-        mark1 = ProjectMark(project_id=self.submitted_project.id, marker_id=self.supervisor_user.id, mark=90, finalised=True)
+        mark1 = ProjectMark(project_id=self.submitted_project.id, marker_id=self.supervisor_user.id, mark=90,
+                            finalised=True)
         db.session.add(mark1)
         db.session.commit()
 
@@ -639,10 +648,12 @@ class ProjectManipulation(unittest.TestCase):
         db.session.refresh(self.submitted_project)
         self.assertFalse(self.submitted_project.is_archived)
 
-        mark2 = ProjectMark(project_id=self.submitted_project.id, marker_id=self.inactive_supervisor_user.id, mark=85, finalised=True)
+        mark2 = ProjectMark(project_id=self.submitted_project.id, marker_id=self.inactive_supervisor_user.id, mark=85,
+                            finalised=True)
         db.session.add(mark2)
         db.session.commit()
-        response = client.post(url_for('project.archive_project', project_id=self.submitted_project.id), follow_redirects=True)
+        response = client.post(url_for('project.archive_project', project_id=self.submitted_project.id),
+                               follow_redirects=True)
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'Project archived successfully.', response.data)
         db.session.refresh(self.submitted_project)
@@ -790,7 +801,8 @@ class ProjectManipulation(unittest.TestCase):
         )
         db.session.add(meeting)
         db.session.commit()
-        with unittest.mock.patch.object(db.session, "commit", side_effect=IntegrityError("Integrity error", None, None)):
+        with unittest.mock.patch.object(db.session, "commit",
+                                        side_effect=IntegrityError("Integrity error", None, None)):
             client = self.login(self.supervisor_user)
             response = client.post(url_for('project.edit_meeting', meeting_id=meeting.id), data={
                 'meeting_start': datetime.now().isoformat(),

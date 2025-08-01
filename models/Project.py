@@ -6,12 +6,14 @@ from exceptions import NoConcordantProjectMarks
 from models.db import db
 from enum import Enum
 
+
 class ProjectStatus(Enum):
     ACTIVE = "Active"
     SUBMITTED = "Submitted"
     MARKING = "Marking in Progress"
     MARKS_CONFIRMED = "Marks Confirmed"
     ARCHIVED = "Archived"
+
 
 class Project(db.Model):
     __tablename__ = 'project'
@@ -48,7 +50,7 @@ class Project(db.Model):
         final_mark = None
         if self.is_submitted:
             try:
-               final_mark = self.get_final_mark()
+                final_mark = self.get_final_mark()
             except NoConcordantProjectMarks:
                 if any(m.finalised for m in self.marks):
                     return ProjectStatus.MARKING
@@ -67,7 +69,7 @@ class Project(db.Model):
         marks_sorted = sorted(marks, key=lambda m: m.id)
 
         for i in range(0, len(marks_sorted), 2):
-            m1, m2 = marks_sorted[i], marks_sorted[i+1]
+            m1, m2 = marks_sorted[i], marks_sorted[i + 1]
             if not (m1.mark and m2.mark and m1.finalised and m2.finalised):
                 continue
             if abs(m1.mark - m2.mark) <= 5:

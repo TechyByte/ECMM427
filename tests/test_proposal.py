@@ -211,7 +211,8 @@ class ProposalCreation(unittest.TestCase):
         db.session.commit()
 
         client = self.login(self.supervisor_user)
-        response = client.post(url_for('proposal.proposal_action', proposal_id=proposal.id), data={'action': 'accept'}, follow_redirects=True)
+        response = client.post(url_for('proposal.proposal_action', proposal_id=proposal.id), data={'action': 'accept'},
+                               follow_redirects=True)
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'Proposal accepted and project created.', response.data)
         self.assertIsNotNone(proposal.accepted_date)
@@ -230,7 +231,8 @@ class ProposalCreation(unittest.TestCase):
         db.session.commit()
 
         client = self.login(self.supervisor_user)
-        response = client.post(url_for('proposal.proposal_action', proposal_id=proposal.id), data={'action': 'reject'}, follow_redirects=True)
+        response = client.post(url_for('proposal.proposal_action', proposal_id=proposal.id), data={'action': 'reject'},
+                               follow_redirects=True)
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'Proposal rejected.', response.data)
         self.assertIsNotNone(proposal.rejected_date)
@@ -248,7 +250,8 @@ class ProposalCreation(unittest.TestCase):
         db.session.commit()
 
         client = self.login(self.student_user)
-        response = client.post(url_for('proposal.proposal_action', proposal_id=proposal.id), data={'action': 'accept'}, follow_redirects=True)
+        response = client.post(url_for('proposal.proposal_action', proposal_id=proposal.id), data={'action': 'accept'},
+                               follow_redirects=True)
         self.assertEqual(response.status_code, 403)
 
     def test_proposal_action_prevents_processing_already_processed_proposal(self):
@@ -264,7 +267,8 @@ class ProposalCreation(unittest.TestCase):
         db.session.commit()
 
         client = self.login(self.supervisor_user)
-        response = client.post(url_for('proposal.proposal_action', proposal_id=proposal.id), data={'action': 'reject'}, follow_redirects=True)
+        response = client.post(url_for('proposal.proposal_action', proposal_id=proposal.id), data={'action': 'reject'},
+                               follow_redirects=True)
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'Proposal already processed.', response.data)
 
@@ -281,7 +285,8 @@ class ProposalCreation(unittest.TestCase):
         db.session.commit()
 
         client = self.login(self.supervisor_user)
-        response = client.post(url_for('proposal.proposal_action', proposal_id=proposal.id), data={'action': 'invalid_action'},
+        response = client.post(url_for('proposal.proposal_action', proposal_id=proposal.id),
+                               data={'action': 'invalid_action'},
                                follow_redirects=True)
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'Invalid action.', response.data)
@@ -352,7 +357,8 @@ class ProposalCreation(unittest.TestCase):
 
         client = self.login(self.student_user)
         with unittest.mock.patch.object(db.session, 'delete', side_effect=Exception("Database error")):
-            response = client.post(url_for('proposal.withdraw_proposal', proposal_id=proposal.id), follow_redirects=True)
+            response = client.post(url_for('proposal.withdraw_proposal', proposal_id=proposal.id),
+                                   follow_redirects=True)
             self.assertEqual(response.status_code, 200)
             self.assertIn(b'Error withdrawing proposal: Database error', response.data)
             self.assertIsNotNone(Proposal.query.get(proposal.id))
@@ -375,7 +381,6 @@ class ProposalCreation(unittest.TestCase):
 
         self.assertEqual(project.proposal, proposal)
         self.assertEqual(proposal.project, project)
-
 
     def test_prevents_associating_project_with_null_proposal(self):
         project = Project(
@@ -507,7 +512,6 @@ class ProposalCreation(unittest.TestCase):
         }, follow_redirects=True)
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'Error: invalid supervisor', response.data)
-
 
     def test_handles_missing_supervisor_in_catalog_proposal(self):
         try:
@@ -767,7 +771,8 @@ class CatalogProposalManagement(unittest.TestCase):
         db.session.add(catalog_proposal)
         db.session.commit()
         client = self.login(self.supervisor_user)
-        response = client.post(url_for('proposal.deactivate_catalog_proposal', proposal_id=catalog_proposal.id), follow_redirects=True)
+        response = client.post(url_for('proposal.deactivate_catalog_proposal', proposal_id=catalog_proposal.id),
+                               follow_redirects=True)
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'Catalog proposal deactivated.', response.data)
         self.assertFalse(CatalogProposal.query.get(catalog_proposal.id).active)
@@ -782,7 +787,8 @@ class CatalogProposalManagement(unittest.TestCase):
         db.session.add(catalog_proposal)
         db.session.commit()
         client = self.login(self.student_user)
-        response = client.post(url_for('proposal.deactivate_catalog_proposal', proposal_id=catalog_proposal.id), follow_redirects=True)
+        response = client.post(url_for('proposal.deactivate_catalog_proposal', proposal_id=catalog_proposal.id),
+                               follow_redirects=True)
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'Only admins and supervisors can deactivate catalog proposals.', response.data)
         self.assertTrue(CatalogProposal.query.get(catalog_proposal.id).active)
@@ -797,8 +803,8 @@ class CatalogProposalManagement(unittest.TestCase):
         db.session.add(catalog_proposal)
         db.session.commit()
         client = self.login(self.supervisor_user)
-        response = client.post(url_for('proposal.deactivate_catalog_proposal', proposal_id=catalog_proposal.id), follow_redirects=True)
+        response = client.post(url_for('proposal.deactivate_catalog_proposal', proposal_id=catalog_proposal.id),
+                               follow_redirects=True)
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'You do not have permission to deactivate this catalog proposal.', response.data)
         self.assertTrue(CatalogProposal.query.get(catalog_proposal.id).active)
-

@@ -215,7 +215,8 @@ class UserManipulation(unittest.TestCase):
 
     def test_grants_admin_privileges_successfully(self):
         client = self.login(self.admin_user)
-        response = client.post(url_for('user.change_admin', user_id=self.student_user.id, admin='true'), follow_redirects=True)
+        response = client.post(url_for('user.change_admin', user_id=self.student_user.id, admin='true'),
+                               follow_redirects=True)
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'User granted admin privileges successfully.', response.data)
         db.session.refresh(self.student_user)
@@ -225,7 +226,8 @@ class UserManipulation(unittest.TestCase):
         self.student_user.is_admin = True
         db.session.commit()
         client = self.login(self.admin_user)
-        response = client.post(url_for('user.change_admin', user_id=self.student_user.id, admin='false'), follow_redirects=True)
+        response = client.post(url_for('user.change_admin', user_id=self.student_user.id, admin='false'),
+                               follow_redirects=True)
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'User removed admin privileges successfully.', response.data)
         db.session.refresh(self.student_user)
@@ -233,7 +235,8 @@ class UserManipulation(unittest.TestCase):
 
     def test_prevents_non_admin_from_changing_admin_status(self):
         client = self.login(self.student_user)
-        response = client.post(url_for('user.change_admin', user_id=self.supervisor_user.id, admin='true'), follow_redirects=True)
+        response = client.post(url_for('user.change_admin', user_id=self.supervisor_user.id, admin='true'),
+                               follow_redirects=True)
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'Only module leaders can promote users.', response.data)
         db.session.refresh(self.supervisor_user)
@@ -248,7 +251,8 @@ class UserManipulation(unittest.TestCase):
         self.student_user.is_admin = True
         db.session.commit()
         client = self.login(self.admin_user)
-        response = client.post(url_for('user.change_admin', user_id=self.student_user.id, admin='true'), follow_redirects=True)
+        response = client.post(url_for('user.change_admin', user_id=self.student_user.id, admin='true'),
+                               follow_redirects=True)
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'User is already an admin.', response.data)
         db.session.refresh(self.student_user)
@@ -257,7 +261,8 @@ class UserManipulation(unittest.TestCase):
     def test_handles_error_during_admin_status_change(self):
         client = self.login(self.admin_user)
         with unittest.mock.patch.object(db.session, "commit", side_effect=Exception("Database error")):
-            response = client.post(url_for('user.change_admin', user_id=self.student_user.id, admin='true'), follow_redirects=True)
+            response = client.post(url_for('user.change_admin', user_id=self.student_user.id, admin='true'),
+                                   follow_redirects=True)
             self.assertEqual(response.status_code, 200)
             self.assertIn(b'Error changing admin status: Database error', response.data)
             db.session.refresh(self.student_user)

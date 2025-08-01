@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship, validates
 from models.db import db
 from sqlalchemy import CheckConstraint
 
+
 class ProjectMark(db.Model):
     __tablename__ = 'project_mark'
 

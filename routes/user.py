@@ -5,17 +5,23 @@ from werkzeug.security import generate_password_hash
 from models import db, User, Proposal, Project, CatalogProposal, ProjectMark
 from models.Proposal import ProposalStatus
 from models.Project import ProjectStatus
+
 user_bp = Blueprint('user', __name__)
 
-def fao_supervisor(supervisor: User) -> ([Proposal],[Project],[Project]):
-    pending_proposals = [p for p in Proposal.query.filter_by(supervisor_id=supervisor.id).all() if p.status == ProposalStatus.PENDING]
-    projects = [p for p in Project.query.filter_by(supervisor_id=supervisor.id).all() if p.status not in [ProjectStatus.MARKS_CONFIRMED, ProjectStatus.ARCHIVED]]
+
+def fao_supervisor(supervisor: User) -> ([Proposal], [Project], [Project]):
+    pending_proposals = [p for p in Proposal.query.filter_by(supervisor_id=supervisor.id).all() if
+                         p.status == ProposalStatus.PENDING]
+    projects = [p for p in Project.query.filter_by(supervisor_id=supervisor.id).all() if
+                p.status not in [ProjectStatus.MARKS_CONFIRMED, ProjectStatus.ARCHIVED]]
     marking_projects = [pm.project for pm in
                         ProjectMark.query.filter_by(marker_id=supervisor.id)
                         .join(Project)
                         .filter(Project.supervisor_id != supervisor.id)
-                        .group_by(ProjectMark.project_id).all() if pm.project.is_submitted and not pm.project.is_archived]
+                        .group_by(ProjectMark.project_id).all() if
+                        pm.project.is_submitted and not pm.project.is_archived]
     return pending_proposals, projects, marking_projects
+
 
 @user_bp.route("/", methods=["GET", "POST"])
 @login_required
@@ -28,28 +34,32 @@ def home():
         supervisors = User.get_active_supervisors()
         if user.is_supervisor:
             pending_proposals, projects, marking_projects = fao_supervisor(user)
-            return render_template("home_admin.html", students=students, supervisors=supervisors, pending_proposals=pending_proposals, projects=projects, marking_projects=marking_projects)
+            return render_template("home_admin.html", students=students, supervisors=supervisors,
+                                   pending_proposals=pending_proposals, projects=projects,
+                                   marking_projects=marking_projects)
         return render_template("home_admin.html", students=students, supervisors=supervisors)
 
     elif user.is_supervisor:
         # Supervisor view
         pending_proposals, projects, marking_projects = fao_supervisor(user)
-        return render_template("home_supervisor.html", pending_proposals=pending_proposals, projects=projects, marking_projects=marking_projects)
+        return render_template("home_supervisor.html", pending_proposals=pending_proposals, projects=projects,
+                               marking_projects=marking_projects)
 
     else:
         # Student view
         projects = [p for p in Project.query.filter_by(student_id=user.id).all() if p.status == ProjectStatus.ACTIVE]
-        old_projects = [p for p in Project.query.filter_by(student_id=user.id).all() if p.status != ProjectStatus.ACTIVE]
-        pending_proposals = [p for p in Proposal.query.filter_by(student_id=user.id).all() if p.status == ProposalStatus.PENDING]
-        rejected_proposals = [p for p in Proposal.query.filter_by(student_id=user.id).all() if p.status == ProposalStatus.REJECTED]
+        old_projects = [p for p in Project.query.filter_by(student_id=user.id).all() if
+                        p.status != ProjectStatus.ACTIVE]
+        pending_proposals = [p for p in Proposal.query.filter_by(student_id=user.id).all() if
+                             p.status == ProposalStatus.PENDING]
+        rejected_proposals = [p for p in Proposal.query.filter_by(student_id=user.id).all() if
+                              p.status == ProposalStatus.REJECTED]
         catalog = CatalogProposal.query.all()
         supervisors = User.get_active_supervisors()
         has_project = len(projects) > 0
         return render_template("home_student.html", has_project=has_project, catalog=catalog,
                                projects=projects, old_projects=old_projects, pending_proposals=pending_proposals,
                                rejected_proposals=rejected_proposals, supervisors=supervisors)
-
-
 
 
 @user_bp.route("/create_user", methods=["POST"])
@@ -85,6 +95,7 @@ def create_user():
         flash(f"Error: {e}", "error")
 
     return redirect(url_for("user.home"))
+
 
 @user_bp.route('/deactivate_user/<int:user_id>', methods=['POST'])
 @login_required
@@ -122,6 +133,7 @@ def change_admin(user_id, admin):
         db.session.rollback()
         flash(f'Error changing admin status: {e}', 'danger')
     return redirect(url_for('user.home'))
+
 
 @user_bp.route("/change_password", methods=["POST"])
 @login_required

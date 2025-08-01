@@ -1,74 +1,86 @@
 {% extends "base.html" %}
 {% block title %}Module Leader Dashboard{% endblock %}
 {% block content %}
-<h2>Module Leader Dashboard</h2>
+    <h2>Module Leader Dashboard</h2>
 
-<h4>Students</h4>
-<ul class="list-group mb-4">
-  {% for student in students %}
-    <li class="list-group-item d-flex justify-content-between align-items-center">
+    <h4>Students</h4>
+    <ul class="list-group mb-4">
+        {% for student in students %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
       <span>
         {{ student.name }} ({{ student.email }})
-        {% for project in student.projects %}
-            {% if project.status.name != "ARCHIVED" %}
-                <a href="{{ url_for('project.view_project', project_id=project.id) }}" class="btn btn-sm btn-outline-primary">View Project</a>
-            {% endif %}
-        {% endfor %}
+          {% for project in student.projects %}
+              {% if project.status.name != "ARCHIVED" %}
+                  <a href="{{ url_for('project.view_project', project_id=project.id) }}"
+                     class="btn btn-sm btn-outline-primary">View Project</a>
+              {% endif %}
+          {% endfor %}
       </span>
-      <form method="POST" action="{{ url_for('user.deactivate_user', user_id=student.id) }}" style="display:inline;">
-        <button type="submit" class="btn btn-link p-0" title="Deactivate User" onclick="return confirm('Are you sure you want to deactivate {{ student.name }}?');">
-          <i class="bi bi-trash" style="color: red; font-size: 1.2rem;"></i>
-        </button>
-      </form>
-    </li>
-  {% endfor %}
-</ul>
+                <form method="POST" action="{{ url_for('user.deactivate_user', user_id=student.id) }}"
+                      style="display:inline;">
+                    <button type="submit" class="btn btn-link p-0" title="Deactivate User"
+                            onclick="return confirm('Are you sure you want to deactivate {{ student.name }}?');">
+                        <i class="bi bi-trash" style="color: red; font-size: 1.2rem;"></i>
+                    </button>
+                </form>
+            </li>
+        {% endfor %}
+    </ul>
 
-<h4>Supervisors</h4>
-<ul class="list-group mb-4">
-  {% for supervisor in supervisors %}
-    <li class="list-group-item d-flex justify-content-between align-items-center">
+    <h4>Supervisors</h4>
+    <ul class="list-group mb-4">
+        {% for supervisor in supervisors %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
       <span>
         {{ supervisor.name }} ({{ supervisor.email }})
-      {%  if supervisor.is_admin %}
-        <span class="badge bg-primary text-white">Module Leader</span>
-      {% endif %}
-        {% for project in supervisor.projects_supervised %}
-            {% if project.status.name != "ARCHIVED" %}
-                <a href="{{ url_for('project.view_project', project_id=project.id) }}" class="btn btn-sm btn-outline-primary">{{ project.student.name }}</a>
-            {% endif %}
-        {% endfor %}
+          {% if supervisor.is_admin %}
+              <span class="badge bg-primary text-white">Module Leader</span>
+          {% endif %}
+          {% for project in supervisor.projects_supervised %}
+              {% if project.status.name != "ARCHIVED" %}
+                  <a href="{{ url_for('project.view_project', project_id=project.id) }}"
+                     class="btn btn-sm btn-outline-primary">{{ project.student.name }}</a>
+              {% endif %}
+          {% endfor %}
       </span>
-    <div class="ms-auto d-flex gap-2">
-        {% if supervisor.id != current_user.id %}
-          <form method="POST" action="{{ url_for('user.deactivate_user', user_id=supervisor.id) }}" style="display:inline;">
-            <button type="submit" class="btn btn-link p-0" title="Deactivate User" onclick="return confirm('Are you sure you want to deactivate {{ supervisor.name }}?');">
-              <i class="bi bi-trash" style="color: red; font-size: 1.2rem;"></i>
-            </button>
-          </form>
-        {% endif %}
-        {% if supervisor.id != current_user.id and not supervisor.is_admin %}
-          <form method="POST" action="{{ url_for('user.change_admin', user_id=supervisor.id, admin=True) }}" style="display:inline;">
-            <button type="submit" class="btn btn-link p-0" title="Promote User" onclick="return confirm('Are you sure you want to promote {{ supervisor.name }} to module leader?');">
-              <i class="bi bi-person-fill-up" style="color: blue; font-size: 1.2rem;"></i>
-            </button>
-          </form>
-        {% elif supervisor.id != current_user.id %}
-            <form method="POST" action="{{ url_for('user.change_admin', user_id=supervisor.id, admin=False) }}" style="display:inline;">
-            <button type="submit" class="btn btn-link p-0" title="Demote User" onclick="return confirm('Are you sure you want to demote {{ supervisor.name }}?');">
-              <i class="bi bi-person-fill-down" style="color: darkorange; font-size: 1.2rem;"></i>
-            </button>
-          </form>
-        {% endif %}
-    </div>
-    </li>
-  {% endfor %}
-</ul>
+                <div class="ms-auto d-flex gap-2">
+                    {% if supervisor.id != current_user.id %}
+                        <form method="POST" action="{{ url_for('user.deactivate_user', user_id=supervisor.id) }}"
+                              style="display:inline;">
+                            <button type="submit" class="btn btn-link p-0" title="Deactivate User"
+                                    onclick="return confirm('Are you sure you want to deactivate {{ supervisor.name }}?');">
+                                <i class="bi bi-trash" style="color: red; font-size: 1.2rem;"></i>
+                            </button>
+                        </form>
+                    {% endif %}
+                    {% if supervisor.id != current_user.id and not supervisor.is_admin %}
+                        <form method="POST"
+                              action="{{ url_for('user.change_admin', user_id=supervisor.id, admin=True) }}"
+                              style="display:inline;">
+                            <button type="submit" class="btn btn-link p-0" title="Promote User"
+                                    onclick="return confirm('Are you sure you want to promote {{ supervisor.name }} to module leader?');">
+                                <i class="bi bi-person-fill-up" style="color: blue; font-size: 1.2rem;"></i>
+                            </button>
+                        </form>
+                    {% elif supervisor.id != current_user.id %}
+                        <form method="POST"
+                              action="{{ url_for('user.change_admin', user_id=supervisor.id, admin=False) }}"
+                              style="display:inline;">
+                            <button type="submit" class="btn btn-link p-0" title="Demote User"
+                                    onclick="return confirm('Are you sure you want to demote {{ supervisor.name }}?');">
+                                <i class="bi bi-person-fill-down" style="color: darkorange; font-size: 1.2rem;"></i>
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            </li>
+        {% endfor %}
+    </ul>
 
-<button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createStudentModal">Add New User</button>
-{% include "modal_create_user.html" %}
+    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createStudentModal">Add New User</button>
+    {% include "modal_create_user.html" %}
     {% if current_user.is_supervisor %}
-    <hr>
-    {%  include "supervisor_dashboard.html" %}
+        <hr>
+        {% include "supervisor_dashboard.html" %}
     {% endif %}
 {% endblock %}

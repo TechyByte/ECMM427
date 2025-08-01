@@ -2,48 +2,54 @@
 {% block title %}Project Catalog{% endblock %}
 
 {% block content %}
-<h2>Project Catalog</h2>
+    <h2>Project Catalog</h2>
 
-{% if catalog %}
-    <div class="row">
-        {% for p in catalog %}
-            <div class="col-md-4 mb-4">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <h5 class="card-title">{{ p.title }}</h5>
-                        <p class="card-text">{{ p.description }}</p>
-                        <p class="card-text"><strong>Supervisor:</strong> {{ p.supervisor.name }}</p>
-                        {%  if current_user.is_admin  %}
-                        <p class="card-text"><strong>Students:</strong>
-                            {% if p.students %}
-                                {{ p.students | map(attribute='name') | join(', ') }}
-                            {% else %}
-                                No students assigned
+    {% if catalog %}
+        <div class="row">
+            {% for p in catalog %}
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ p.title }}</h5>
+                            <p class="card-text">{{ p.description }}</p>
+                            <p class="card-text"><strong>Supervisor:</strong> {{ p.supervisor.name }}</p>
+                            {% if current_user.is_admin %}
+                                <p class="card-text"><strong>Students:</strong>
+                                    {% if p.students %}
+                                        {{ p.students | map(attribute='name') | join(', ') }}
+                                    {% else %}
+                                        No students assigned
+                                    {% endif %}
+                                </p>
                             {% endif %}
-                        </p>
-                        {% endif %}
-                        {% if current_user.obj.is_admin or current_user.id == p.supervisor_id %}
-                            <form method="POST" action="{{ url_for('proposal.deactivate_catalog_proposal', proposal_id=p.id) }}" style="position:absolute; top:0.5rem; right:0.5rem; z-index:2;">
-                                <button type="submit" class="btn btn-link p-0" title="Deactivate Proposal" onclick="return confirm('Are you sure you want to deactivate this catalog proposal?');">
-                                    <i class="bi bi-trash" style="color: red; font-size: 1.2rem;"></i>
-                                </button>
-                            </form>
-                        {% endif %}
+                            {% if current_user.obj.is_admin or current_user.id == p.supervisor_id %}
+                                <form method="POST"
+                                      action="{{ url_for('proposal.deactivate_catalog_proposal', proposal_id=p.id) }}"
+                                      style="position:absolute; top:0.5rem; right:0.5rem; z-index:2;">
+                                    <button type="submit" class="btn btn-link p-0" title="Deactivate Proposal"
+                                            onclick="return confirm('Are you sure you want to deactivate this catalog proposal?');">
+                                        <i class="bi bi-trash" style="color: red; font-size: 1.2rem;"></i>
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
-            </div>
-        {% endfor %}
-    </div>
-{% else %}
-    <p>No projects available in the catalog.</p>
-{% endif %}
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>No projects available in the catalog.</p>
+    {% endif %}
 
-{% if current_user.obj.is_student %}
-    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#proposalModal">Submit a Proposal</button>
-    {% include 'modal_proposal.html' %}
-{% endif %}
-{% if current_user.obj.is_supervisor %}
-    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#catalogProposalModal">Create Catalog Proposal</button>
-    {% include 'modal_create_catalog_proposal.html' %}
-{% endif %}
+    {% if current_user.obj.is_student %}
+        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#proposalModal">Submit a Proposal
+        </button>
+        {% include 'modal_proposal.html' %}
+    {% endif %}
+    {% if current_user.obj.is_supervisor %}
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#catalogProposalModal">Create Catalog
+            Proposal
+        </button>
+        {% include 'modal_create_catalog_proposal.html' %}
+    {% endif %}
 {% endblock %}

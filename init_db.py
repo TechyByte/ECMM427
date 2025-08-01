@@ -1,9 +1,11 @@
 from app import create_app
 from models.db import db
+
 app = create_app()
 
 from models import User, CatalogProposal
 from werkzeug.security import generate_password_hash
+
 
 def init_database():
     with app.app_context():
@@ -82,6 +84,7 @@ def init_database():
         db.session.commit()
 
         print("Database initialized with users and catalog proposals.")
+
 
 if __name__ == "__main__":
     init_database()

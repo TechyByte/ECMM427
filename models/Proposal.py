@@ -10,10 +10,12 @@ from exceptions import InvalidStudent, InvalidSupervisor, MaxProposalsReachedErr
 
 from enum import Enum
 
+
 class ProposalStatus(Enum):
     PENDING = 'Pending'
     ACCEPTED = 'Accepted'
     REJECTED = 'Rejected'
+
 
 class Proposal(db.Model):
     __tablename__ = 'proposal'

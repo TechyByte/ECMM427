@@ -12,6 +12,7 @@ CONFIG = {
     'SECRET_KEY': 'dev'
 }
 
+
 def create_app(config=None):
     app = Flask(__name__)
     app.config.from_mapping(CONFIG)
@@ -45,6 +46,7 @@ def create_app(config=None):
         db.create_all()
 
     return app
+
 
 if __name__ == "__main__":
     this_app = create_app()

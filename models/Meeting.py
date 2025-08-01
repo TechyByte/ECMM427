@@ -4,6 +4,7 @@ from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
 from models.db import db
 
+
 class Meeting(db.Model):
     __tablename__ = 'meeting'
 
