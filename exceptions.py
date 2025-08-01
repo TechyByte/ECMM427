@@ -11,7 +11,7 @@ class ActiveUserError(ValueError):
     pass
 
 class MaxProposalsReachedError(ValueError):
-    # This exception is raised when a user tries to create more propoosals than allowed.
+    # This exception is raised when a user tries to create more proposals than allowed.
     pass
 
 class ProjectNotSubmittedError(ValueError):

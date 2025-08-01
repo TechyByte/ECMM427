@@ -29,7 +29,7 @@ The system follows a classic web architecture using Flask (MVC pattern), SQLite 
   - _Submitted_: Represents a project that has been submitted by the student but has not yet undergone marking.
   - _Marking in Progress_: Denotes that the project is in the process of being marked, typically when marks are incomplete or subject to reconciliation.
   - _Marks Confirmed_: Indicates that the project's marks have been finalised.
-  - _Archived_: Represents a project that has been archived, ie. it is no longer active or undergoing evaluation.
+  - _Archived_: Represents a project that has been archived, i.e. it is no longer active or undergoing evaluation.
 
 - **Meeting**: Supervisor-logged attendance and notes for each project. Email contact can be logged in outcome notes.
 
@@ -45,17 +45,17 @@ The system handles personal data, requiring GDPR-compliant processing. Role-base
 
 ## Software Components and Licensing
 
-| Component        | 	Vendor                       | 	Version         | 	EOL               | License | 	Cost/Model | 
-|------------------|-------------------------------|------------------|--------------------|--------|-------------|
-| Python           | 	Python Software  Foundation  | 	3.9.23 - 3.13.5 | Oct 2025 - Oct 2029 | PSF	  | Free  | 
-| Flask            | 	Pallets Projects             | 	3.0.3           | Current            | BSD-3 | Free	 | 
-| SQLite           | 	D. R. Hipp (Public  Domain)	 | 3.49.2	        | --                 | Public | Free  |
-| SQLAlchemy       | 	SQLAlchemy Project           | 	2.0.x           | Active             | MIT	  | Free  |  
-| Flask-SQLAlchemy | 	Pallets Projects             | 	3.0.x	        | Active             | MIT	  | Free  |
-| Flask-Login      | 	Flask  ecosystem             | 	0.6.2           | Active             | MIT   | Free	  |
-| Werkzeug         | 	Pallets Projects             | 	2.3.x	        | Active             | BSD-3 | Free	  |
-| Jinja2           | 	Pallets Projects             | 	3.1.x	        | Active             | BSD-3 | Free	  | 
-| Bootstrap        | 	Open source  (GitHub)        | 	5.2.x	        | Active             | MIT	  | Free  | 
+| Component        | 	Vendor                       | 	Version         | 	EOL                | License | 	Cost/Model | 
+|------------------|-------------------------------|------------------|---------------------|---------|-------------|
+| Python           | 	Python Software  Foundation  | 	3.9.23 - 3.13.5 | Oct 2025 - Oct 2029 | PSF	    | Free        | 
+| Flask            | 	Pallets Projects             | 	3.0.3           | Current             | BSD-3   | Free	       | 
+| SQLite           | 	D. R. Hipp (Public  Domain)	 | 3.49.2	          | --                  | Public  | Free        |
+| SQLAlchemy       | 	SQLAlchemy Project           | 	2.0.x           | Active              | MIT	    | Free        |  
+| Flask-SQLAlchemy | 	Pallets Projects             | 	3.0.x	          | Active              | MIT	    | Free        |
+| Flask-Login      | 	Flask  ecosystem             | 	0.6.2           | Active              | MIT     | Free	       |
+| Werkzeug         | 	Pallets Projects             | 	2.3.x	          | Active              | BSD-3   | Free	       |
+| Jinja2           | 	Pallets Projects             | 	3.1.x	          | Active              | BSD-3   | Free	       | 
+| Bootstrap        | 	Open source  (GitHub)        | 	5.2.x	          | Active              | MIT	    | Free        | 
 
 The project uses the MIT License: permissive, compatible with all dependencies, and ideal for academic reuse or extension.
 
