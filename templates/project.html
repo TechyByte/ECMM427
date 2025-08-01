@@ -138,14 +138,15 @@
           </div>
           <div class="modal-body">
             <div class="mb-3">
-              <label for="add_marker_id">Select additional marker:</label>
-              <select name="add_marker_id" class="form-select" required>
-                {% for supervisor in supervisors %}
-                  {% if supervisor.id != project.supervisor_id %}
-                    <option value="{{ supervisor.id }}">{{ supervisor.name }}</option>
-                  {% endif %}
-                {% endfor %}
-              </select>
+              <label for="add_marker_id">Select additional marker:
+                  <select name="add_marker_id" class="form-select" required>
+                    {% for supervisor in supervisors %}
+                      {% if supervisor.id != project.supervisor_id %}
+                        <option value="{{ supervisor.id }}">{{ supervisor.name }}</option>
+                      {% endif %}
+                    {% endfor %}
+                  </select>
+              </label>
             </div>
           </div>
           <div class="modal-footer">
