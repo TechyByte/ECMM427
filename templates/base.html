@@ -52,7 +52,7 @@
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="{{ url_for('auth.logout') }}"
-                   title="{{ current_user.email }} -  {{ current_user.user_type }}">Logout</a>
+                   title="{{ current_user.email }} -  {{ current_user.user_type }}">Logout ({{ current_user.name }})</a>
             </li>
         {% endif %}
         </ul>
